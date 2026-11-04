@@ -242,12 +242,12 @@ static void drawIndoorHouseIcon(int cx,int cy) {
 // Large central house outline: two roof slopes, two walls and a sill.
 // The cyan half denotes outdoors; the coral half denotes indoors.
 static void drawHouseBoundary() {
-  gfx.drawLine(164,43,214,8,CYAN);
-  gfx.drawLine(214,8,264,43,CORAL);
-  gfx.drawFastVLine(164,43,84,CYAN);
+  gfx.drawLine(180,43,218,8,CYAN);
+  gfx.drawLine(218,8,264,43,CORAL);
+  gfx.drawFastVLine(180,43,84,CYAN);
   gfx.drawFastVLine(264,43,84,CORAL);
-  gfx.drawFastHLine(164,127,50,CYAN);
-  gfx.drawFastHLine(214,127,50,CORAL);
+  gfx.drawFastHLine(180,127,38,CYAN);
+  gfx.drawFastHLine(218,127,46,CORAL);
 }
 
 static void drawDashboard() {
@@ -275,13 +275,9 @@ static void drawDashboard() {
   x=drawNumber(39,88,"64",ICE);
   drawSmallText(x+3,115,"%",CYAN);
 
-  drawBarometer(111,105);
-  gfx.setFont(&FreeSansBold12pt7b);
-  gfx.setTextColor(ICE);
-  gfx.setCursor(128,111);
-  gfx.print("1013");
-  gfx.setFont();
-  drawSmallText(184,124,"hPa",ORANGE);
+  drawBarometer(96,105);
+  drawSmallText(114,115,"1013",ICE);
+  drawSmallText(151,115,"hPa",ORANGE);
 
   // INDOOR humidity, lower-right.
   drawDrop(291,105,CORAL);
