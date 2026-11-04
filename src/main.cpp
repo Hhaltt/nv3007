@@ -256,12 +256,13 @@ static void drawThermometer(int cx,int cy) {
 // the right-side wall; the wall continues to the bottom sill.
 static void drawHouseBoundary() {
   const uint16_t c=CYAN;
-  // Keep the entire outdoor column clear. The roof begins in the central
-  // gutter, rises to the ridge, then slopes down to the indoor-side wall.
+  // The wall is the boundary between the two zones. Keep it LEFT of
+  // every indoor icon/value; do not draw it through the house thermometer
+  // or the indoor humidity drop.
   gfx.drawLine(178,43,222,8,c);
-  gfx.drawLine(222,8,270,53,c);
-  gfx.drawFastVLine(270,53,79,c);
-  gfx.drawFastHLine(270,132,150,c);
+  gfx.drawLine(222,8,245,53,c);
+  gfx.drawFastVLine(245,53,79,c);
+  gfx.drawFastHLine(245,132,175,c);
 }
 
 static void drawDashboard() {
@@ -290,14 +291,14 @@ static void drawDashboard() {
   drawSmallText(x+4,135,"hPa",ORANGE);
 
   // RIGHT: indoor temperature, with a small house/thermometer pictogram.
-  drawIndoorHouseIcon(266,47);
+  drawIndoorHouseIcon(276,47);
   x=drawNumber(300,34,"22.4",ICE);
   drawDegreeC(x+2,34,ICE);
 
   gfx.drawFastHLine(260,83,157,MUTED);
 
   // RIGHT: indoor humidity
-  drawDrop(277,111,YELLOW);
+  drawDrop(276,111,YELLOW);
   x=drawNumber(310,96,"45",ICE);
   drawSmallText(x+7,123,"% ",YELLOW);
 
