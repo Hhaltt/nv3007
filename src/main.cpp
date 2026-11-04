@@ -139,20 +139,19 @@ static void lcdFlush() {
 }
 
 // ---------------------- NV3007 climate dashboard ----------------------
-// Refined wide-screen adaptation of the supplied layout (428x142).
-// Large temperatures on top; compact humidity/pressure information below.
-// A central house silhouette separates outdoor and indoor areas.
+// Layout designed on a 428x142 logical canvas before being sent to the panel.
+// Outdoor data occupies the left column, indoor data the right column.
+// The central house is a separator, not a background behind the readings.
 
 static const uint8_t SEGMENTS[10] = {
   0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F
 };
 
-static constexpr uint16_t CYAN   = 0x4E9F;
-static constexpr uint16_t ICE    = 0xDFFF;
-static constexpr uint16_t MUTED  = 0x4208;
-static constexpr uint16_t CORAL  = 0xF2AA;
-static constexpr uint16_t RED    = 0xF800;
-static constexpr uint16_t CLOUD  = 0xC618;
+static constexpr uint16_t CYAN  = 0x3DDF;
+static constexpr uint16_t ICE   = 0xEFFF;
+static constexpr uint16_t CORAL = 0xF2AA;
+static constexpr uint16_t PALE  = 0xC618;
+static constexpr uint16_t DARK  = 0x4208;
 
 static void segH(int x,int y,int w,uint16_t c) {
   gfx.fillRoundRect(x,y,w,4,2,c);
@@ -161,7 +160,7 @@ static void segV(int x,int y,int h,uint16_t c) {
   gfx.fillRoundRect(x,y,4,h,2,c);
 }
 
-// Seven-segment numerals, 18x36 px cell.
+// Large, clean seven-segment digits: 18x36 px, 21 px advance.
 static void drawDigit(int x,int y,uint8_t n,uint16_t c) {
   const uint8_t s=SEGMENTS[n];
   if(s&0x01) segH(x+4,y,11,c);
@@ -183,8 +182,15 @@ static int drawNumber(int x,int y,const char *s,uint16_t c) {
   }
   return x;
 }
-static void drawSmallText(int x,int baseline,const char *s,uint16_t c) {
+static void drawText9(int x,int baseline,const char *s,uint16_t c) {
   gfx.setFont(&FreeSansBold9pt7b);
+  gfx.setTextColor(c);
+  gfx.setCursor(x,baseline);
+  gfx.print(s);
+  gfx.setFont();
+}
+static void drawText12(int x,int baseline,const char *s,uint16_t c) {
+  gfx.setFont(&FreeSansBold12pt7b);
   gfx.setTextColor(c);
   gfx.setCursor(x,baseline);
   gfx.print(s);
@@ -192,97 +198,97 @@ static void drawSmallText(int x,int baseline,const char *s,uint16_t c) {
 }
 static void drawDegreeC(int x,int y,uint16_t c) {
   gfx.drawCircle(x+3,y+5,3,c);
-  drawSmallText(x+11,y+13,"C",c);
+  drawText9(x+10,y+13,"C",c);
 }
 
-// Filled outdoor cloud and rain.
+// Filled cloud with a separate cyan rain accent.
 static void drawCloudRain(int cx,int cy) {
-  gfx.fillCircle(cx-9,cy+1,8,CLOUD);
+  gfx.fillCircle(cx-9,cy+2,8,PALE);
   gfx.fillCircle(cx+1,cy-5,11,ICE);
-  gfx.fillCircle(cx+12,cy+1,8,CLOUD);
-  gfx.fillRoundRect(cx-16,cy-1,34,12,6,CLOUD);
-  gfx.fillCircle(cx-3,cy-8,4,WHITE);
-  gfx.drawLine(cx-9,cy+14,cx-12,cy+20,CYAN);
+  gfx.fillCircle(cx+12,cy+2,8,PALE);
+  gfx.fillRoundRect(cx-17,cy-1,34,12,6,PALE);
+  gfx.fillCircle(cx-3,cy-9,4,WHITE);
+  gfx.drawLine(cx-10,cy+14,cx-13,cy+20,CYAN);
   gfx.drawLine(cx,cy+14,cx-3,cy+20,CYAN);
-  gfx.drawLine(cx+9,cy+14,cx+6,cy+20,CYAN);
+  gfx.drawLine(cx+10,cy+14,cx+7,cy+20,CYAN);
 }
 
-// Compact filled humidity drop.
+// Filled water drop with a small highlight.
 static void drawDrop(int cx,int cy,uint16_t color) {
   gfx.fillTriangle(cx,cy-11,cx-8,cy+1,cx+8,cy+1,color);
   gfx.fillCircle(cx,cy+2,8,color);
-  gfx.fillCircle(cx-1,cy+1,4,BLACK);
-  gfx.drawLine(cx-3,cy+4,cx-1,cy+7,ICE);
+  gfx.drawLine(cx-3,cy+2,cx-1,cy+5,ICE);
 }
 
-// Pressure dial.
+// Compact analogue pressure gauge.
 static void drawBarometer(int cx,int cy) {
-  gfx.fillCircle(cx,cy,12,ORANGE);
-  gfx.fillCircle(cx,cy,9,0x2104);
-  gfx.drawCircle(cx,cy,7,ICE);
-  gfx.drawFastVLine(cx,cy-6,2,ICE);
-  gfx.drawFastHLine(cx-6,cy,2,ICE);
+  gfx.fillCircle(cx,cy,11,ORANGE);
+  gfx.fillCircle(cx,cy,8,BLACK);
+  gfx.drawCircle(cx,cy,6,ICE);
+  gfx.drawFastVLine(cx,cy-5,2,ICE);
+  gfx.drawFastHLine(cx-5,cy,2,ICE);
   gfx.drawFastHLine(cx+4,cy,2,ICE);
   gfx.drawLine(cx,cy,cx+4,cy-4,CYAN);
   gfx.fillCircle(cx,cy,2,WHITE);
 }
 
-// Small house icon used only beside the indoor temperature.
+// Small indoor-house marker with a clear thermometer symbol.
 static void drawIndoorHouseIcon(int cx,int cy) {
-  gfx.drawLine(cx-13,cy-1,cx,cy-14,CORAL);
-  gfx.drawLine(cx,cy-14,cx+13,cy-1,CORAL);
-  gfx.drawLine(cx-10,cy-3,cx-10,cy+13,CORAL);
-  gfx.drawLine(cx+10,cy-3,cx+10,cy+13,CORAL);
-  gfx.drawFastHLine(cx-10,cy+13,20,CORAL);
-  gfx.drawRoundRect(cx-2,cy+1,4,9,2,ICE);
-  gfx.drawFastVLine(cx,cy+3,5,RED);
-  gfx.fillCircle(cx,cy+11,3,RED);
+  gfx.drawLine(cx-12,cy-1,cx,cy-13,CORAL);
+  gfx.drawLine(cx,cy-13,cx+12,cy-1,CORAL);
+  gfx.drawLine(cx-9,cy-3,cx-9,cy+12,CORAL);
+  gfx.drawLine(cx+9,cy-3,cx+9,cy+12,CORAL);
+  gfx.drawFastHLine(cx-9,cy+12,18,CORAL);
+  gfx.drawRoundRect(cx-2,cy+1,4,8,2,ICE);
+  gfx.drawFastVLine(cx,cy+3,4,RED);
+  gfx.fillCircle(cx,cy+10,3,RED);
 }
 
-// Large central house outline: two roof slopes, two walls and a sill.
-// The cyan half denotes outdoors; the coral half denotes indoors.
+// Central house silhouette. Its left half is outdoor cyan, right half indoor coral.
+// The vertical centre partition is intentional; no readings are drawn over it.
 static void drawHouseBoundary() {
-  gfx.drawLine(180,43,218,8,CYAN);
-  gfx.drawLine(218,8,264,43,CORAL);
-  gfx.drawFastVLine(180,43,84,CYAN);
-  gfx.drawFastVLine(264,43,84,CORAL);
-  gfx.drawFastHLine(180,127,38,CYAN);
-  gfx.drawFastHLine(218,127,46,CORAL);
+  // Roof
+  gfx.drawLine(198,49,246,12,CYAN);
+  gfx.drawLine(246,12,294,49,CORAL);
+  // Outer walls and central partition
+  gfx.drawFastVLine(198,49,79,CYAN);
+  gfx.drawFastVLine(246,49,79,CYAN);
+  gfx.drawFastVLine(294,49,79,CORAL);
+  // Base
+  gfx.drawFastHLine(198,128,48,CYAN);
+  gfx.drawFastHLine(246,128,48,CORAL);
 }
 
 static void drawDashboard() {
   gfx.fillScreen(BLACK);
 
-  // Central divider is drawn first, behind all content.
+  // Central house first, so all foreground data remains crisp.
   drawHouseBoundary();
 
-  // OUTDOOR temperature, upper-left.
-  drawCloudRain(25,35);
-  int x=drawNumber(49,24,"-5.2",ICE);
-  drawDegreeC(x+2,24,ICE);
+  // OUTDOOR temperature: cloud + large value.
+  drawCloudRain(22,34);
+  int x=drawNumber(53,18,"-5.2",ICE);
+  drawDegreeC(x+1,18,ICE);
 
-  // INDOOR temperature, upper-right.
-  drawIndoorHouseIcon(290,35);
-  x=drawNumber(313,24,"22.4",ICE);
-  drawDegreeC(x+1,24,ICE);
+  // INDOOR temperature: house/thermometer + large value.
+  drawIndoorHouseIcon(315,35);
+  x=drawNumber(334,18,"22.4",ICE);
+  drawDegreeC(x+1,18,ICE);
 
-  // Subtle horizontal separators only within the data areas.
-  gfx.drawFastHLine(10,76,145,MUTED);
-  gfx.drawFastHLine(273,76,145,MUTED);
+  // OUTDOOR humidity.
+  drawDrop(22,103,CYAN);
+  x=drawNumber(42,85,"64",ICE);
+  drawText9(x+2,112,"%",CYAN);
 
-  // OUTDOOR humidity and pressure share the lower-left area.
-  drawDrop(22,105,CYAN);
-  x=drawNumber(39,88,"64",ICE);
-  drawSmallText(x+3,115,"%",CYAN);
+  // OUTDOOR pressure. Kept completely left of the house outline.
+  drawBarometer(126,104);
+  drawText12(142,114,"1013",ICE);
+  drawText9(179,114,"hPa",ORANGE);
 
-  drawBarometer(96,105);
-  drawSmallText(114,115,"1013",ICE);
-  drawSmallText(151,115,"hPa",ORANGE);
-
-  // INDOOR humidity, lower-right.
-  drawDrop(291,105,CORAL);
-  x=drawNumber(311,88,"45",ICE);
-  drawSmallText(x+4,115,"%",CORAL);
+  // INDOOR humidity.
+  drawDrop(312,103,CORAL);
+  x=drawNumber(332,85,"45",ICE);
+  drawText9(x+3,112,"%",CORAL);
 
   lcdFlush();
 }
