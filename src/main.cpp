@@ -210,7 +210,7 @@ static void drawDropIcon(int cx, int cy, uint16_t color) {
   gfx.drawLine(cx,cy-15,cx+10,cy+2,color);
   gfx.drawLine(cx-10,cy+2,cx-9,cy+10,color);
   gfx.drawLine(cx+10,cy+2,cx+9,cy+10,color);
-  gfx.drawArc(cx,cy+3,10,10,0,180,color);
+  gfx.drawCircle(cx,cy+5,9,color);
 }
 
 static void drawThermoIcon(int cx, int cy, uint16_t color) {
