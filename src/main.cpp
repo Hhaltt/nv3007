@@ -3,7 +3,6 @@
 #include <Adafruit_GFX.h>
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
-#include <Fonts/FreeSansBold14pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
 
 // ESP32-C3 SuperMini + NV3007 142x428 SPI module
@@ -219,7 +218,7 @@ static void drawMetric(int iconX, int baseline, const char *value,
   if (iconType == 0) drawDrop(iconX, baseline - 25, color);
   else drawBarometer(iconX, baseline - 25, color);
 
-  gfx.setFont(&FreeSansBold14pt7b);
+  gfx.setFont(&FreeSansBold18pt7b);
   gfx.setTextColor(WHITE);
   gfx.setCursor(textX, baseline);
   gfx.print(value);
