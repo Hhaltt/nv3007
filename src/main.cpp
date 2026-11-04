@@ -138,174 +138,175 @@ static void lcdFlush() {
   SPI.endTransaction();
 }
 
-// ---------------------- Reference-style climate dashboard ----------------------
-// 428x142 landscape. Cyan technical display, 7-segment numerals,
-// outdoor weather on the left, indoor climate on the right.
+// ---------------------- Clean reference-style climate dashboard ----------------------
+// All coordinates are for the 428x142 logical landscape canvas.
+// Keep the roof graphic in the central gap: it must never cross text or icons.
 
 static const uint8_t SEGMENTS[10] = {
-  0b00111111, // 0
-  0b00000110, // 1
-  0b01011011, // 2
-  0b01001111, // 3
-  0b01100110, // 4
-  0b01101101, // 5
-  0b01111101, // 6
-  0b00000111, // 7
-  0b01111111, // 8
-  0b01101111  // 9
+  0x3F, 0x06, 0x5B, 0x4F, 0x66,
+  0x6D, 0x7D, 0x07, 0x7F, 0x6F
 };
 
-static void thickLine(int x1, int y1, int x2, int y2, uint16_t color, int t=3) {
-  for (int i = -(t/2); i <= t/2; ++i) {
-    if (abs(x2-x1) > abs(y2-y1)) gfx.drawLine(x1, y1+i, x2, y2+i, color);
-    else gfx.drawLine(x1+i, y1, x2+i, y2, color);
-  }
+// A legible custom 7-segment digit, 22x38 px.
+static void segH(int x, int y, int len, uint16_t color) {
+  gfx.fillRoundRect(x, y, len, 4, 2, color);
+}
+static void segV(int x, int y, int len, uint16_t color) {
+  gfx.fillRoundRect(x, y, 4, len, 2, color);
+}
+static void drawDigit(int x, int y, uint8_t n, uint16_t color) {
+  const uint8_t s = SEGMENTS[n];
+  if (s & 0x01) segH(x+4,  y,    14, color); // a
+  if (s & 0x02) segV(x+18, y+4,  14, color); // b
+  if (s & 0x04) segV(x+18, y+21, 14, color); // c
+  if (s & 0x08) segH(x+4,  y+36, 14, color); // d
+  if (s & 0x10) segV(x,    y+21, 14, color); // e
+  if (s & 0x20) segV(x,    y+4,  14, color); // f
+  if (s & 0x40) segH(x+4,  y+18, 14, color); // g
 }
 
-static void draw7Digit(int x, int y, int digit, uint16_t color, int scale=1) {
-  const int w=15*scale, h=27*scale, t=3*scale;
-  const int mx=x+w/2, my=y+h/2;
-  const uint8_t s=SEGMENTS[digit];
-  if (s & 0x01) thickLine(x+3*scale,y,mx-2*scale,y,color,t);
-  if (s & 0x02) thickLine(x+w,y+3*scale,x+w,my-2*scale,color,t);
-  if (s & 0x04) thickLine(x+w,my+2*scale,x+w,y+h-3*scale,color,t);
-  if (s & 0x08) thickLine(x+3*scale,y+h,mx-2*scale,y+h,color,t);
-  if (s & 0x10) thickLine(x,y+my+2*scale,x,y+h-3*scale,color,t);
-  if (s & 0x20) thickLine(x,y+3*scale,x,my-2*scale,color,t);
-  if (s & 0x40) thickLine(x+3*scale,my,mx-2*scale,my,color,t);
-}
-
-static int draw7Text(int x, int y, const char *str, uint16_t color, int scale=1) {
-  const int advance=21*scale;
-  for (const char *p=str; *p; ++p) {
-    if (*p >= '0' && *p <= '9') {
-      draw7Digit(x,y,*p-'0',color,scale);
-      x += advance;
-    } else if (*p == '-') {
-      thickLine(x+2*scale,y+14*scale,x+12*scale,y+14*scale,color,3*scale);
-      x += advance;
-    } else if (*p == '+') {
-      thickLine(x+2*scale,y+14*scale,x+12*scale,y+14*scale,color,3*scale);
-      thickLine(x+7*scale,y+9*scale,x+7*scale,y+19*scale,color,3*scale);
-      x += advance;
-    } else if (*p == '.') {
-      gfx.fillCircle(x+2*scale,y+27*scale,2*scale,color);
-      x += 7*scale;
+static int drawSegmentNumber(int x, int y, const char *s, uint16_t color) {
+  for (; *s; ++s) {
+    if (*s >= '0' && *s <= '9') {
+      drawDigit(x, y, (uint8_t)(*s-'0'), color);
+      x += 28;
+    } else if (*s == '-') {
+      gfx.fillRoundRect(x+2, y+18, 14, 4, 2, color);
+      x += 20;
+    } else if (*s == '+') {
+      gfx.fillRoundRect(x+2, y+18, 14, 4, 2, color);
+      gfx.fillRoundRect(x+7, y+13, 4, 14, 2, color);
+      x += 20;
+    } else if (*s == '.') {
+      gfx.fillCircle(x+2, y+39, 2, color);
+      x += 8;
     }
   }
   return x;
 }
 
-static void drawDegreeC(int x, int baseline, uint16_t color) {
-  gfx.drawCircle(x+3, baseline-24, 3, color);
+static void drawUnitC(int x, int y, uint16_t color) {
+  gfx.drawCircle(x+3, y+5, 3, color);
   gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(color);
-  gfx.setCursor(x+10, baseline-8);
+  gfx.setCursor(x+10, y+11);
   gfx.print("C");
   gfx.setFont();
 }
 
 static void drawDropIcon(int cx, int cy, uint16_t color) {
-  gfx.drawLine(cx,cy-15,cx-10,cy+2,color);
-  gfx.drawLine(cx,cy-15,cx+10,cy+2,color);
-  gfx.drawLine(cx-10,cy+2,cx-9,cy+10,color);
-  gfx.drawLine(cx+10,cy+2,cx+9,cy+10,color);
-  gfx.drawCircle(cx,cy+5,9,color);
+  // Clean outline drop, symmetric and centered on cx/cy.
+  gfx.drawLine(cx,cy-14,cx-10,cy+2,color);
+  gfx.drawLine(cx,cy-14,cx+10,cy+2,color);
+  gfx.drawLine(cx-10,cy+2,cx-9,cy+9,color);
+  gfx.drawLine(cx+10,cy+2,cx+9,cy+9,color);
+  gfx.drawCircle(cx,cy+4,9,color);
+  gfx.drawFastHLine(cx-5,cy+13,10,color);
 }
 
 static void drawThermoIcon(int cx, int cy, uint16_t color) {
-  gfx.drawRoundRect(cx-5,cy-16,10,27,5,color);
-  gfx.drawFastVLine(cx,cy-9,23,color);
-  gfx.drawCircle(cx,cy+14,7,color);
-  gfx.fillCircle(cx,cy+14,3,color);
+  gfx.drawRoundRect(cx-5,cy-15,10,25,5,color);
+  gfx.drawFastVLine(cx,cy-8,20,color);
+  gfx.drawCircle(cx,cy+13,7,color);
+  gfx.fillCircle(cx,cy+13,3,color);
 }
 
 static void drawPressureIcon(int cx, int cy, uint16_t color) {
-  gfx.drawCircle(cx,cy,16,color);
-  gfx.drawLine(cx,cy-11,cx,cy-7,color);
-  gfx.drawLine(cx-11,cy,cx-7,cy,color);
-  gfx.drawLine(cx+11,cy,cx+7,cy,color);
-  gfx.drawLine(cx,cy,cx+7,cy-8,color);
+  gfx.drawCircle(cx,cy,15,color);
+  gfx.drawLine(cx,cy-10,cx,cy-6,color);
+  gfx.drawLine(cx-10,cy,cx-6,cy,color);
+  gfx.drawLine(cx+10,cy,cx+6,cy,color);
+  gfx.drawLine(cx,cy,cx+6,cy-7,color);
   gfx.fillCircle(cx,cy,2,color);
 }
 
 static void drawRainCloud(int cx, int cy, uint16_t color) {
-  gfx.drawRoundRect(cx-20,cy-1,40,19,9,color);
-  gfx.drawCircle(cx-9,cy-4,10,color);
-  gfx.drawCircle(cx+5,cy-9,13,color);
-  gfx.drawCircle(cx+17,cy-2,9,color);
-  // mask lower inner arcs for a clean outlined cloud
-  gfx.drawFastHLine(cx-18,cy+1,36,BLACK);
-  gfx.drawLine(cx-12,cy+23,cx-16,cy+29,color);
-  gfx.drawLine(cx,cy+23,cx-4,cy+29,color);
-  gfx.drawLine(cx+12,cy+23,cx+8,cy+29,color);
+  // Simple cloud silhouette with three separate rain strokes.
+  gfx.drawRoundRect(cx-18,cy-4,36,19,9,color);
+  gfx.drawCircle(cx-8,cy-5,9,color);
+  gfx.drawCircle(cx+5,cy-10,12,color);
+  gfx.drawCircle(cx+16,cy-3,8,color);
+  gfx.drawFastHLine(cx-15,cy+4,30,BLACK);
+  gfx.drawLine(cx-10,cy+19,cx-14,cy+25,color);
+  gfx.drawLine(cx,cy+19,cx-4,cy+25,color);
+  gfx.drawLine(cx+10,cy+19,cx+6,cy+25,color);
 }
 
 static void drawHouseThermometer(int cx, int cy, uint16_t color) {
-  // Mirrored house icon: roof slopes are reversed relative to the first draft.
-  gfx.drawLine(cx-18,cy-2,cx+1,cy-20,color);
-  gfx.drawLine(cx+1,cy-20,cx+20,cy-2,color);
-  gfx.drawRect(cx-14,cy-2,30,29,color);
-  gfx.drawRoundRect(cx-2,cy+4,7,16,3,color);
-  gfx.drawFastVLine(cx+1,cy+7,12,color);
-  gfx.drawCircle(cx+1,cy+21,4,color);
+  // Small house icon, mirrored roof orientation from the earlier draft.
+  gfx.drawLine(cx-17,cy-2,cx,cy-19,color);
+  gfx.drawLine(cx,cy-19,cx+17,cy-2,color);
+  gfx.drawFastHLine(cx-17,cy-2,34,color);
+  gfx.drawFastVLine(cx-13,cy-2,25,color);
+  gfx.drawFastVLine(cx+13,cy-2,25,color);
+  gfx.drawFastHLine(cx-13,cy+23,26,color);
+  gfx.drawRoundRect(cx-3,cy+3,6,13,3,color);
+  gfx.drawFastVLine(cx,cy+6,10,color);
+  gfx.drawCircle(cx,cy+18,4,color);
 }
 
-static void drawRoofDivider() {
-  // Automotive cabin outline: broad roof rises from the outdoor side,
-  // slopes down to the center partition; mirrored house profile.
-  gfx.drawLine(8,43,150,7,BLUE);
-  gfx.drawLine(150,7,238,43,BLUE);
-  gfx.drawFastHLine(226,43,194,BLUE);
-  gfx.drawFastVLine(226,43,91,BLUE);
-  gfx.drawFastHLine(226,134,194,BLUE);
+static void drawHouseDivider() {
+  // House roof is restricted to the empty center corridor.
+  // No line runs over either data column.
+  gfx.drawLine(194,42,214,23,BLUE);
+  gfx.drawLine(214,23,234,42,BLUE);
+  gfx.drawFastVLine(214,42,91,BLUE);
+  gfx.drawFastHLine(214,133,204,BLUE);
+}
+
+static void drawLabel(int x, int y, const char *s) {
+  gfx.setFont(&FreeSansBold9pt7b);
+  gfx.setTextColor(BLUE);
+  gfx.setCursor(x,y);
+  gfx.print(s);
+  gfx.setFont();
 }
 
 static void drawDashboard() {
   gfx.fillScreen(BLACK);
 
-  // Section captions
+  // Titles occupy their own top row.
+  drawLabel(14,17,"OUTDOOR");
+  drawLabel(335,17,"INDOOR");
+
+  // The house divider is centered between columns, away from content.
+  drawHouseDivider();
+
+  // OUTDOOR column: three consistent rows.
+  drawRainCloud(35,39,BLUE);
+  int x = drawSegmentNumber(67,27,"-5.2",BLUE);
+  drawUnitC(x+2,27,BLUE);
+
+  gfx.drawFastHLine(12,72,187,GREY);
+
+  drawDropIcon(35,91,BLUE);
+  x = drawSegmentNumber(67,78,"64",BLUE);
+  gfx.setFont(&FreeSansBold12pt7b);
+  gfx.setTextColor(BLUE);
+  gfx.setCursor(x+4,108); gfx.print("%");
+  gfx.setFont();
+
+  gfx.drawFastHLine(12,113,187,GREY);
+
+  drawPressureIcon(35,126,BLUE);
+  x = drawSegmentNumber(67,108,"1013",BLUE);
   gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(BLUE);
-  gfx.setCursor(13,16); gfx.print("OUTDOOR");
+  gfx.setCursor(x+3,137); gfx.print("hPa");
+  gfx.setFont();
+
+  // INDOOR column: two rows, vertically balanced.
+  drawHouseThermometer(255,48,BLUE);
+  x = drawSegmentNumber(286,35,"22.4",BLUE);
+  drawUnitC(x+2,35,BLUE);
+
+  gfx.drawFastHLine(248,82,168,GREY);
+
+  drawDropIcon(265,108,BLUE);
+  x = drawSegmentNumber(296,94,"45",BLUE);
+  gfx.setFont(&FreeSansBold12pt7b);
   gfx.setTextColor(BLUE);
-  gfx.setCursor(337,16); gfx.print("INDOOR");
-  gfx.setFont();
-
-  drawRoofDivider();
-
-  // Outdoor: icon column and large 7-segment values.
-  drawRainCloud(39,39,BLUE);
-  draw7Text(78,27,"-5.2",BLUE,1);
-  drawDegreeC(164,57,BLUE);
-
-  gfx.drawFastHLine(12,70,190,GREY);
-
-  drawDropIcon(39,91,BLUE);
-  draw7Text(78,78,"78",BLUE,1);
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(BLUE); gfx.setCursor(124,101); gfx.print("%");
-  gfx.setFont();
-
-  gfx.drawFastHLine(12,109,190,GREY);
-
-  drawPressureIcon(39,124,BLUE);
-  draw7Text(78,111,"735",BLUE,1);
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(BLUE); gfx.setCursor(145,132); gfx.print("hPa");
-  gfx.setFont();
-
-  // Indoor: house icon + temperature, then humidity.
-  drawHouseThermometer(255,47,YELLOW);
-  draw7Text(287,35,"22.4",BLUE,1);
-  drawDegreeC(373,65,BLUE);
-
-  gfx.drawFastHLine(248,83,169,GREY);
-
-  drawDropIcon(267,108,BLUE);
-  draw7Text(300,94,"45",BLUE,1);
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(BLUE); gfx.setCursor(346,117); gfx.print("%");
+  gfx.setCursor(x+4,124); gfx.print("%");
   gfx.setFont();
 
   lcdFlush();
