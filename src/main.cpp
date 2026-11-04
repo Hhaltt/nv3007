@@ -139,62 +139,53 @@ static void lcdFlush() {
 }
 
 // ---------------------- Automotive-style climate dashboard ----------------------
-// Outside values on the left; cabin values on the right.
-// The outer contour is a simple house/car-climate silhouette: straight left roof,
-// raised roof peak over the cabin, sloping windshield/roof to the right.
-// No headings and no cloud illustration.
+// Compact, uncluttered layout for 428x142 landscape screen.
+// No left-side frame. The roof contour itself separates outside and cabin.
 
 static void drawThermometer(int x, int y, uint16_t color) {
-  gfx.drawRoundRect(x + 5, y, 9, 27, 4, color);
-  gfx.drawLine(x + 9, y + 6, x + 9, y + 24, color);
-  gfx.drawCircle(x + 9, y + 29, 7, color);
-  gfx.fillCircle(x + 9, y + 29, 3, color);
+  gfx.drawRoundRect(x + 4, y, 8, 22, 4, color);
+  gfx.drawLine(x + 8, y + 5, x + 8, y + 19, color);
+  gfx.drawCircle(x + 8, y + 24, 6, color);
+  gfx.fillCircle(x + 8, y + 24, 3, color);
 }
 
 static void drawDrop(int x, int y, uint16_t color) {
-  gfx.drawLine(x + 9, y, x + 1, y + 12, color);
-  gfx.drawLine(x + 9, y, x + 17, y + 12, color);
-  gfx.drawRoundRect(x + 2, y + 9, 14, 16, 7, color);
+  gfx.drawLine(x + 8, y, x + 1, y + 11, color);
+  gfx.drawLine(x + 8, y, x + 15, y + 11, color);
+  gfx.drawRoundRect(x + 2, y + 8, 13, 15, 6, color);
 }
 
 static void drawBarometer(int x, int y, uint16_t color) {
-  gfx.drawCircle(x + 11, y + 12, 10, color);
-  gfx.drawLine(x + 4, y + 18, x + 18, y + 18, color);
-  gfx.drawLine(x + 11, y + 12, x + 17, y + 6, color);
-  gfx.fillCircle(x + 11, y + 12, 2, color);
+  gfx.drawCircle(x + 9, y + 10, 8, color);
+  gfx.drawFastHLine(x + 4, y + 16, 10, color);
+  gfx.drawLine(x + 9, y + 10, x + 14, y + 5, color);
+  gfx.fillCircle(x + 9, y + 10, 2, color);
 }
 
 static void drawCabinLamp(int cx, int y, uint16_t color) {
-  // Minimal hanging cabin light under the roof peak.
-  gfx.drawFastVLine(cx, y, 9, color);
-  gfx.drawRoundRect(cx - 13, y + 8, 26, 11, 5, color);
-  gfx.drawFastHLine(cx - 9, y + 13, 18, color);
-  gfx.drawLine(cx - 8, y + 21, cx - 12, y + 26, color);
-  gfx.drawLine(cx, y + 21, cx, y + 27, color);
-  gfx.drawLine(cx + 8, y + 21, cx + 12, y + 26, color);
+  gfx.drawFastVLine(cx, y, 8, color);
+  gfx.drawRoundRect(cx - 11, y + 7, 22, 9, 4, color);
+  gfx.drawFastHLine(cx - 7, y + 11, 14, color);
+  gfx.drawLine(cx - 7, y + 18, cx - 10, y + 22, color);
+  gfx.drawLine(cx, y + 18, cx, y + 23, color);
+  gfx.drawLine(cx + 7, y + 18, cx + 10, y + 22, color);
 }
 
-static void drawVehicleHouseOutline() {
-  // One continuous, angular contour. Straight roof on the left; no curved top.
-  gfx.drawFastVLine(9, 39, 91, WHITE);
-  gfx.drawFastHLine(9, 39, 196, WHITE);
-  gfx.drawLine(205, 39, 286, 5, WHITE);
-  gfx.drawLine(286, 5, 416, 48, WHITE);
-  gfx.drawFastVLine(416, 48, 82, WHITE);
-  gfx.drawLine(416, 130, 9, 130, WHITE);
+static void drawRoofAndDivider() {
+  // Straight outside roof edge, then a peaked cabin roof.
+  gfx.drawFastHLine(7, 38, 194, WHITE);
+  gfx.drawLine(201, 38, 285, 5, WHITE);
+  gfx.drawLine(285, 5, 420, 48, WHITE);
 
-  // Central wall dividing outside from cabin.
-  gfx.drawFastVLine(214, 49, 81, WHITE);
-
-  // Short bottom edge of the center wall for a clean connection.
-  gfx.drawPixel(214, 130, WHITE);
+  // Central wall only; no vertical line at the left edge.
+  gfx.drawFastVLine(214, 48, 82, WHITE);
 }
 
 static void drawTemperature(int iconX, int baseline, const char *value,
                             uint16_t iconColor, int textX) {
-  drawThermometer(iconX, baseline - 27, iconColor);
+  drawThermometer(iconX, baseline - 23, iconColor);
 
-  gfx.setFont(&FreeSansBold18pt7b);
+  gfx.setFont(&FreeSansBold12pt7b);
   gfx.setTextColor(WHITE);
   gfx.setCursor(textX, baseline);
   gfx.print(value);
@@ -203,22 +194,22 @@ static void drawTemperature(int iconX, int baseline, const char *value,
   uint16_t w, h;
   gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
 
-  const int degreeX = textX + w + 3;
-  gfx.drawCircle(degreeX + 4, baseline - 22, 4, WHITE);
-  gfx.setFont(&FreeSansBold12pt7b);
+  int degreeX = textX + w + 3;
+  gfx.drawCircle(degreeX + 3, baseline - 15, 3, WHITE);
+  gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(degreeX + 12, baseline);
+  gfx.setCursor(degreeX + 10, baseline);
   gfx.print("C");
   gfx.setFont();
 }
 
 static void drawMetric(int iconX, int baseline, const char *value,
-                       const char *unit, uint16_t color,
+                       const char *unit, uint16_t iconColor,
                        uint8_t iconType, int textX) {
-  if (iconType == 0) drawDrop(iconX, baseline - 25, color);
-  else drawBarometer(iconX, baseline - 25, color);
+  if (iconType == 0) drawDrop(iconX, baseline - 20, iconColor);
+  else drawBarometer(iconX, baseline - 20, iconColor);
 
-  gfx.setFont(&FreeSansBold18pt7b);
+  gfx.setFont(&FreeSansBold12pt7b);
   gfx.setTextColor(WHITE);
   gfx.setCursor(textX, baseline);
   gfx.print(value);
@@ -228,8 +219,8 @@ static void drawMetric(int iconX, int baseline, const char *value,
   gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
 
   gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(color);
-  gfx.setCursor(textX + w + 7, baseline);
+  gfx.setTextColor(iconColor);
+  gfx.setCursor(textX + w + 6, baseline);
   gfx.print(unit);
   gfx.setFont();
 }
@@ -237,20 +228,17 @@ static void drawMetric(int iconX, int baseline, const char *value,
 static void drawDashboard() {
   gfx.fillScreen(BLACK);
 
-  // Main silhouette and outside/cabin divider.
-  drawVehicleHouseOutline();
+  drawRoofAndDivider();
+  drawCabinLamp(285, 7, YELLOW);
 
-  // Cabin lamp sits under the roof peak; no cloud or section labels.
-  drawCabinLamp(286, 7, YELLOW);
+  // OUTSIDE: three evenly spaced rows.
+  drawTemperature(17, 69, "-5.2", BLUE, 47);
+  drawMetric(17, 101, "78", "% RH", BLUE, 0, 47);
+  drawMetric(17, 130, "735", "mmHg", WHITE, 1, 47);
 
-  // OUTSIDE: temperature, relative humidity and pressure.
-  drawTemperature(23, 75, "-5.2", BLUE, 62);
-  drawMetric(24, 108, "78", "% RH", BLUE, 0, 62);
-  drawMetric(24, 127, "735", "mmHg", WHITE, 1, 62);
-
-  // INSIDE: cabin temperature and relative humidity.
-  drawTemperature(228, 79, "+22.4", YELLOW, 260);
-  drawMetric(230, 117, "30", "% RH", YELLOW, 0, 260);
+  // INSIDE: two larger, vertically balanced rows.
+  drawTemperature(230, 75, "+22.4", YELLOW, 260);
+  drawMetric(230, 116, "30", "% RH", YELLOW, 0, 260);
 
   lcdFlush();
 }
