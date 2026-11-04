@@ -172,13 +172,15 @@ static void drawCabinLamp(int cx, int y, uint16_t color) {
 }
 
 static void drawRoofAndDivider() {
-  // Straight outside roof edge, then a peaked cabin roof.
-  gfx.drawFastHLine(7, 38, 194, WHITE);
-  gfx.drawLine(201, 38, 285, 5, WHITE);
-  gfx.drawLine(285, 5, 420, 48, WHITE);
+  // Simple rectangular enclosure with one central partition.
+  // No horizontal stroke floating above the outdoor readings.
+  gfx.drawRoundRect(5, 7, 418, 128, 5, WHITE);
 
-  // Central wall only; no vertical line at the left edge.
-  gfx.drawFastVLine(214, 48, 82, WHITE);
+  // Central wall divides outside and indoor zones.
+  gfx.drawFastVLine(214, 8, 126, WHITE);
+
+  // Small angled roof joint at the top of the partition, as in the sketch.
+  gfx.drawLine(198, 8, 214, 25, WHITE);
 }
 
 static void drawTemperature(int iconX, int baseline, const char *value,
