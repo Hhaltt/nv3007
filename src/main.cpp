@@ -155,9 +155,7 @@ static void drawDropIcon(int x, int y, uint16_t color) {
   // Symmetric water drop
   gfx.drawLine(x + 8, y, x + 2, y + 10, color);
   gfx.drawLine(x + 8, y, x + 14, y + 10, color);
-  gfx.drawLine(x + 2, y + 10, x + 2, y + 13, color);
-  gfx.drawLine(x + 14, y + 10, x + 14, y + 13, color);
-  gfx.drawArc(x + 8, y + 11, 7, 7, 0, 180, color);
+  gfx.drawCircle(x + 8, y + 11, 6, color);
 }
 
 static void drawPressureIcon(int x, int y, uint16_t color) {
