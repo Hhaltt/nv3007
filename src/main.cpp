@@ -3,6 +3,8 @@
 #include <Adafruit_GFX.h>
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
+#include <Fonts/FreeSansBold14pt7b.h>
+#include <Fonts/FreeSansBold18pt7b.h>
 
 // ESP32-C3 SuperMini + NV3007 142x428 SPI module
 // Logical layout is 428x142 landscape.
@@ -137,87 +139,98 @@ static void lcdFlush() {
   SPI.endTransaction();
 }
 
-// ---------------------- Minimal weather panel ----------------------
-// Composition follows the user's sketch:
-// left = outdoor temperature / RH / pressure
-// right = indoor temperature / RH
-// Central roof-shaped divider. Small clean line icons, no decoration.
+// ---------------------- Automotive-style climate dashboard ----------------------
+// Outside values on the left; cabin values on the right.
+// The outer contour is a simple house/car-climate silhouette: straight left roof,
+// raised roof peak over the cabin, sloping windshield/roof to the right.
+// No headings and no cloud illustration.
 
-static void drawThermoIcon(int x, int y, uint16_t color) {
-  // 14x25 thermometer
-  gfx.drawRoundRect(x + 5, y, 7, 19, 3, color);
-  gfx.drawLine(x + 8, y + 5, x + 8, y + 19, color);
-  gfx.drawCircle(x + 8, y + 21, 5, color);
-  gfx.fillCircle(x + 8, y + 21, 2, color);
+static void drawThermometer(int x, int y, uint16_t color) {
+  gfx.drawRoundRect(x + 5, y, 9, 27, 4, color);
+  gfx.drawLine(x + 9, y + 6, x + 9, y + 24, color);
+  gfx.drawCircle(x + 9, y + 29, 7, color);
+  gfx.fillCircle(x + 9, y + 29, 3, color);
 }
 
-static void drawDropIcon(int x, int y, uint16_t color) {
-  // Symmetric water drop
-  gfx.drawLine(x + 8, y, x + 2, y + 10, color);
-  gfx.drawLine(x + 8, y, x + 14, y + 10, color);
-  gfx.drawCircle(x + 8, y + 11, 6, color);
+static void drawDrop(int x, int y, uint16_t color) {
+  gfx.drawLine(x + 9, y, x + 1, y + 12, color);
+  gfx.drawLine(x + 9, y, x + 17, y + 12, color);
+  gfx.drawRoundRect(x + 2, y + 9, 14, 16, 7, color);
 }
 
-static void drawPressureIcon(int x, int y, uint16_t color) {
-  // Compact barometer dial with needle
-  gfx.drawCircle(x + 9, y + 10, 8, color);
-  gfx.drawFastHLine(x + 4, y + 17, 10, color);
-  gfx.drawLine(x + 9, y + 10, x + 14, y + 5, color);
-  gfx.fillCircle(x + 9, y + 10, 2, color);
+static void drawBarometer(int x, int y, uint16_t color) {
+  gfx.drawCircle(x + 11, y + 12, 10, color);
+  gfx.drawLine(x + 4, y + 18, x + 18, y + 18, color);
+  gfx.drawLine(x + 11, y + 12, x + 17, y + 6, color);
+  gfx.fillCircle(x + 11, y + 12, 2, color);
 }
 
-static void drawRoofDivider() {
-  // Roof peak and short eaves, with central wall below.
-  gfx.drawLine(214, 7, 178, 34, WHITE);
-  gfx.drawLine(214, 7, 250, 34, WHITE);
-  gfx.drawLine(214, 7, 214, 134, WHITE);
+static void drawCabinLamp(int cx, int y, uint16_t color) {
+  // Minimal hanging cabin light under the roof peak.
+  gfx.drawFastVLine(cx, y, 9, color);
+  gfx.drawRoundRect(cx - 13, y + 8, 26, 11, 5, color);
+  gfx.drawFastHLine(cx - 9, y + 13, 18, color);
+  gfx.drawLine(cx - 8, y + 21, cx - 12, y + 26, color);
+  gfx.drawLine(cx, y + 21, cx, y + 27, color);
+  gfx.drawLine(cx + 8, y + 21, cx + 12, y + 26, color);
 }
 
-static void drawPanelFrame() {
-  gfx.drawRoundRect(2, 2, 424, 138, 7, 0x7BEF);
+static void drawVehicleHouseOutline() {
+  // One continuous, angular contour. Straight roof on the left; no curved top.
+  gfx.drawFastVLine(9, 39, 91, WHITE);
+  gfx.drawFastHLine(9, 39, 196, WHITE);
+  gfx.drawLine(205, 39, 286, 5, WHITE);
+  gfx.drawLine(286, 5, 416, 48, WHITE);
+  gfx.drawFastVLine(416, 48, 82, WHITE);
+  gfx.drawLine(416, 130, 9, 130, WHITE);
+
+  // Central wall dividing outside from cabin.
+  gfx.drawFastVLine(214, 49, 81, WHITE);
+
+  // Short bottom edge of the center wall for a clean connection.
+  gfx.drawPixel(214, 130, WHITE);
 }
 
-static void drawTemperatureRow(int x, int y, const char *value,
-                               uint16_t iconColor, bool indoor) {
-  drawThermoIcon(x, y - 19, iconColor);
+static void drawTemperature(int iconX, int baseline, const char *value,
+                            uint16_t iconColor, int textX) {
+  drawThermometer(iconX, baseline - 27, iconColor);
 
-  gfx.setFont(&FreeSansBold12pt7b);
+  gfx.setFont(&FreeSansBold18pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(x + 25, y);
+  gfx.setCursor(textX, baseline);
   gfx.print(value);
 
-  int16_t bx, by;
-  uint16_t bw, bh;
-  gfx.getTextBounds(value, x + 25, y, &bx, &by, &bw, &bh);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
 
-  int degreeX = x + 25 + bw + 3;
-  gfx.drawCircle(degreeX + 3, y - 13, 3, WHITE);
-  gfx.setFont();
-  gfx.setTextSize(1);
+  const int degreeX = textX + w + 3;
+  gfx.drawCircle(degreeX + 4, baseline - 22, 4, WHITE);
+  gfx.setFont(&FreeSansBold12pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(degreeX + 9, y - 9);
+  gfx.setCursor(degreeX + 12, baseline);
   gfx.print("C");
-  (void)indoor;
+  gfx.setFont();
 }
 
-static void drawValueRow(int x, int y, const char *value,
-                         const char *unit, uint16_t iconColor,
-                         uint8_t iconType) {
-  if (iconType == 0) drawDropIcon(x, y - 17, iconColor);
-  else drawPressureIcon(x, y - 18, iconColor);
+static void drawMetric(int iconX, int baseline, const char *value,
+                       const char *unit, uint16_t color,
+                       uint8_t iconType, int textX) {
+  if (iconType == 0) drawDrop(iconX, baseline - 25, color);
+  else drawBarometer(iconX, baseline - 25, color);
 
-  gfx.setFont(&FreeSansBold12pt7b);
+  gfx.setFont(&FreeSansBold14pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(x + 25, y);
+  gfx.setCursor(textX, baseline);
   gfx.print(value);
 
-  int16_t bx, by;
-  uint16_t bw, bh;
-  gfx.getTextBounds(value, x + 25, y, &bx, &by, &bw, &bh);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
 
   gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(iconColor);
-  gfx.setCursor(x + 30 + bw, y);
+  gfx.setTextColor(color);
+  gfx.setCursor(textX + w + 7, baseline);
   gfx.print(unit);
   gfx.setFont();
 }
@@ -225,29 +238,20 @@ static void drawValueRow(int x, int y, const char *value,
 static void drawDashboard() {
   gfx.fillScreen(BLACK);
 
-  // Panel outline and central house-shaped split
-  drawPanelFrame();
-  drawRoofDivider();
+  // Main silhouette and outside/cabin divider.
+  drawVehicleHouseOutline();
 
-  // Small section titles
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(BLUE);
-  gfx.setCursor(14, 18);
-  gfx.print("OUTSIDE");
+  // Cabin lamp sits under the roof peak; no cloud or section labels.
+  drawCabinLamp(286, 7, YELLOW);
 
-  gfx.setTextColor(YELLOW);
-  gfx.setCursor(300, 18);
-  gfx.print("INSIDE");
-  gfx.setFont();
+  // OUTSIDE: temperature, relative humidity and pressure.
+  drawTemperature(23, 75, "-5.2", BLUE, 62);
+  drawMetric(24, 108, "78", "% RH", BLUE, 0, 62);
+  drawMetric(24, 127, "735", "mmHg", WHITE, 1, 62);
 
-  // OUTSIDE: temperature, relative humidity, atmospheric pressure
-  drawTemperatureRow(14, 48, "-5.2", BLUE, false);
-  drawValueRow(14, 87, "78", "% RH", BLUE, 0);
-  drawValueRow(14, 125, "735", "mmHg", BLUE, 1);
-
-  // INSIDE: temperature and relative humidity
-  drawTemperatureRow(236, 58, "+22.4", ORANGE, true);
-  drawValueRow(236, 105, "30", "% RH", YELLOW, 0);
+  // INSIDE: cabin temperature and relative humidity.
+  drawTemperature(228, 79, "+22.4", YELLOW, 260);
+  drawMetric(230, 117, "30", "% RH", YELLOW, 0, 260);
 
   lcdFlush();
 }
