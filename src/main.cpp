@@ -52,7 +52,7 @@ static void cmd(uint8_t c, const uint8_t *d = nullptr, size_t n = 0) {
 struct InitCmd { uint8_t cmd, len, data[4]; };
 
 // Same NV3007 init sequence as the previously working color-test sketch.
-static const InitCmd init[] = {
+static const InitCmd nv3007InitSequence[] = {
   {0xFF,1,{0xA5}}, {0x9A,1,{0x08}}, {0x9B,1,{0x08}}, {0x9C,1,{0xB0}},
   {0x9D,1,{0x16}}, {0x9E,1,{0xC4}}, {0x8F,2,{0x55,0x04}}, {0x84,1,{0x90}},
   {0x83,1,{0x7B}}, {0x85,1,{0x33}},
@@ -94,7 +94,7 @@ static void lcdInit() {
   digitalWrite(PIN_RST, LOW);  delay(120);
   digitalWrite(PIN_RST, HIGH); delay(120);
 
-  for (const auto &e : init) {
+  for (const auto &e : nv3007InitSequence) {
     if (!e.len) break;
     cmd(e.cmd, e.data, e.len);
   }
