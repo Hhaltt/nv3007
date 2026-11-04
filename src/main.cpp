@@ -152,8 +152,6 @@ static constexpr uint16_t CYAN   = 0x4E9F;
 static constexpr uint16_t ICE    = 0xDFFF;
 static constexpr uint16_t PALE   = 0xBFFF;
 static constexpr uint16_t MUTED  = 0x4208;
-static constexpr uint16_t YELLOW = 0xFFE0;
-static constexpr uint16_t ORANGE = 0xFD20;
 static constexpr uint16_t RED    = 0xF800;
 static constexpr uint16_t CLOUD  = 0xC618;
 
