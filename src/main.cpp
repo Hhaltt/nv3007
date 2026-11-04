@@ -142,103 +142,88 @@ static void lcdFlush() {
 // Compact, uncluttered layout for 428x142 landscape screen.
 // No left-side frame. The roof contour itself separates outside and cabin.
 
-static void drawThermometer(int x, int y, uint16_t color) {
-  gfx.drawRoundRect(x + 4, y, 8, 22, 4, color);
-  gfx.drawLine(x + 8, y + 5, x + 8, y + 19, color);
-  gfx.drawCircle(x + 8, y + 24, 6, color);
-  gfx.fillCircle(x + 8, y + 24, 3, color);
+// ---------------------- Climate panel drawing ----------------------
+// Logical canvas: 428x142. Two balanced zones split by a house roof/wall.
+// Large values, consistent baselines, and icons aligned to each text row.
+
+static void drawThermometer(int x, int cy, uint16_t color) {
+  // Clean, symmetric thermometer: tube, inner column and round bulb.
+  gfx.drawRoundRect(x + 6, cy - 15, 10, 29, 5, color);
+  gfx.drawFastVLine(x + 11, cy - 9, 22, color);
+  gfx.drawCircle(x + 11, cy + 17, 8, color);
+  gfx.fillCircle(x + 11, cy + 17, 4, color);
 }
 
-static void drawDrop(int x, int y, uint16_t color) {
-  gfx.drawLine(x + 8, y, x + 1, y + 11, color);
-  gfx.drawLine(x + 8, y, x + 15, y + 11, color);
-  gfx.drawRoundRect(x + 2, y + 8, 13, 15, 6, color);
+static void drawDrop(int x, int cy, uint16_t color) {
+  // Symmetric pointed drop with a rounded lower bowl.
+  gfx.drawLine(x + 11, cy - 14, x + 3, cy + 1, color);
+  gfx.drawLine(x + 11, cy - 14, x + 19, cy + 1, color);
+  gfx.drawRoundRect(x + 4, cy - 1, 15, 20, 7, color);
 }
 
-static void drawBarometer(int x, int y, uint16_t color) {
-  gfx.drawCircle(x + 9, y + 10, 8, color);
-  gfx.drawFastHLine(x + 4, y + 16, 10, color);
-  gfx.drawLine(x + 9, y + 10, x + 14, y + 5, color);
-  gfx.fillCircle(x + 9, y + 10, 2, color);
-}
-
-static void drawCabinLamp(int cx, int y, uint16_t color) {
-  gfx.drawFastVLine(cx, y, 8, color);
-  gfx.drawRoundRect(cx - 11, y + 7, 22, 9, 4, color);
-  gfx.drawFastHLine(cx - 7, y + 11, 14, color);
-  gfx.drawLine(cx - 7, y + 18, cx - 10, y + 22, color);
-  gfx.drawLine(cx, y + 18, cx, y + 23, color);
-  gfx.drawLine(cx + 7, y + 18, cx + 10, y + 22, color);
+static void drawBarometer(int x, int cy, uint16_t color) {
+  // Gauge face with ticks and a centered needle.
+  gfx.drawCircle(x + 11, cy + 1, 10, color);
+  gfx.drawFastHLine(x + 5, cy + 8, 12, color);
+  gfx.drawLine(x + 11, cy + 1, x + 17, cy - 6, color);
+  gfx.fillCircle(x + 11, cy + 1, 2, color);
 }
 
 static void drawRoofAndDivider() {
-  // House silhouette separator, NOT a frame around the screen.
-  // The outside zone has a straight top edge; the indoor zone is under a roof.
-  gfx.drawFastHLine(8, 38, 178, WHITE);       // flat outdoor roof/ceiling
-  gfx.drawLine(186, 38, 214, 12, WHITE);    // roof rises to the peak
-  gfx.drawLine(214, 12, 242, 38, WHITE);    // roof slopes down
-  gfx.drawFastHLine(242, 38, 178, WHITE);   // indoor roof edge
-  gfx.drawFastVLine(214, 12, 119, WHITE);   // wall between outside and inside
+  // House silhouette only: horizontal outside roof, peaked cabin roof,
+  // horizontal indoor roof and a central wall. No screen border.
+  gfx.drawFastHLine(7, 35, 178, WHITE);
+  gfx.drawLine(185, 35, 214, 8, WHITE);
+  gfx.drawLine(214, 8, 243, 35, WHITE);
+  gfx.drawFastHLine(243, 35, 178, WHITE);
+  gfx.drawFastVLine(214, 8, 128, WHITE);
 }
 
-static void drawTemperature(int iconX, int baseline, const char *value,
-                            uint16_t iconColor, int textX) {
-  drawThermometer(iconX, baseline - 23, iconColor);
-
-  gfx.setFont(&FreeSansBold12pt7b);
+static void drawBigValue(int x, int baseline, const char *value,
+                         const char *unit, uint16_t unitColor,
+                         bool temperature) {
+  gfx.setFont(&FreeSansBold18pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(textX, baseline);
+  gfx.setCursor(x, baseline);
   gfx.print(value);
 
-  int16_t x1, y1;
-  uint16_t w, h;
-  gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
+  int16_t bx, by;
+  uint16_t bw, bh;
+  gfx.getTextBounds(value, x, baseline, &bx, &by, &bw, &bh);
 
-  int degreeX = textX + w + 3;
-  gfx.drawCircle(degreeX + 3, baseline - 15, 3, WHITE);
+  int ux = x + bw + (temperature ? 11 : 7);
   gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(WHITE);
-  gfx.setCursor(degreeX + 10, baseline);
-  gfx.print("C");
-  gfx.setFont();
-}
-
-static void drawMetric(int iconX, int baseline, const char *value,
-                       const char *unit, uint16_t iconColor,
-                       uint8_t iconType, int textX) {
-  if (iconType == 0) drawDrop(iconX, baseline - 20, iconColor);
-  else drawBarometer(iconX, baseline - 20, iconColor);
-
-  gfx.setFont(&FreeSansBold12pt7b);
-  gfx.setTextColor(WHITE);
-  gfx.setCursor(textX, baseline);
-  gfx.print(value);
-
-  int16_t x1, y1;
-  uint16_t w, h;
-  gfx.getTextBounds(value, textX, baseline, &x1, &y1, &w, &h);
-
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(iconColor);
-  gfx.setCursor(textX + w + 6, baseline);
+  gfx.setTextColor(unitColor);
+  gfx.setCursor(ux, baseline);
   gfx.print(unit);
+
+  if (temperature) {
+    // Degree symbol sits above the C, with enough gap not to touch the digits.
+    gfx.drawCircle(x + bw + 4, baseline - 19, 4, WHITE);
+  }
   gfx.setFont();
 }
 
 static void drawDashboard() {
   gfx.fillScreen(BLACK);
-
   drawRoofAndDivider();
-  drawCabinLamp(285, 7, YELLOW);
 
-  // OUTSIDE: three evenly spaced rows.
-  drawTemperature(17, 69, "-5.2", BLUE, 47);
-  drawMetric(17, 101, "78", "% RH", BLUE, 0, 47);
-  drawMetric(17, 130, "735", "mmHg", WHITE, 1, 47);
+  // OUTDOOR zone: three rows with equal 32 px rhythm.
+  drawThermometer(13, 49, BLUE);
+  drawBigValue(43, 66, "-5.2", "C", WHITE, true);
 
-  // INSIDE: two larger, vertically balanced rows.
-  drawTemperature(230, 75, "+22.4", YELLOW, 260);
-  drawMetric(230, 116, "30", "% RH", YELLOW, 0, 260);
+  drawDrop(13, 88, BLUE);
+  drawBigValue(43, 101, "78", "% RH", BLUE, false);
+
+  drawBarometer(13, 119, BLUE);
+  drawBigValue(43, 133, "735", "mmHg", BLUE, false);
+
+  // INDOOR zone: two centered rows; same scale and icon language.
+  drawThermometer(230, 60, YELLOW);
+  drawBigValue(260, 78, "+22.4", "C", WHITE, true);
+
+  drawDrop(230, 99, YELLOW);
+  drawBigValue(260, 119, "30", "% RH", YELLOW, false);
 
   lcdFlush();
 }
