@@ -249,13 +249,14 @@ static void thickLine(int x1,int y1,int x2,int y2,uint16_t c,int t=3) {
   }
 }
 static void drawHouseDivider() {
-  const uint16_t roof=0x07FF;
-  // Mirrored roof profile, located only in the central gutter.
-  thickLine(181,43,214,9,roof,3);
-  thickLine(214,9,247,43,roof,3);
-  // Wall and lower sill make the central house silhouette readable.
-  thickLine(214,43,214,132,roof,3);
-  thickLine(214,132,420,132,roof,3);
+  const uint16_t house=0x07FF;
+  // Complete, closed house silhouette in the centre gutter.
+  // Both roof slopes, both walls and a short base: no arrow shaft or tail.
+  thickLine(181,45,214,10,house,4);
+  thickLine(214,10,247,45,house,4);
+  thickLine(181,45,181,130,house,4);
+  thickLine(247,45,247,130,house,4);
+  thickLine(181,130,247,130,house,4);
 }
 
 static void drawDashboard() {
