@@ -256,12 +256,12 @@ static void drawThermometer(int cx,int cy) {
 // the right-side wall; the wall continues to the bottom sill.
 static void drawHouseBoundary() {
   const uint16_t c=CYAN;
-  // roof: outdoor side rises to ridge, then long descending indoor-side slope
-  gfx.drawLine(68,39,151,8,c);
-  gfx.drawLine(151,8,235,60,c);
-  // right wall and bottom boundary
-  gfx.drawFastVLine(235,60,72,c);
-  gfx.drawFastHLine(235,132,185,c);
+  // Keep the entire outdoor column clear. The roof begins in the central
+  // gutter, rises to the ridge, then slopes down to the indoor-side wall.
+  gfx.drawLine(178,43,222,8,c);
+  gfx.drawLine(222,8,270,53,c);
+  gfx.drawFastVLine(270,53,79,c);
+  gfx.drawFastHLine(270,132,150,c);
 }
 
 static void drawDashboard() {
