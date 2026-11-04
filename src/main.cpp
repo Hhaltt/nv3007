@@ -151,7 +151,7 @@ static constexpr uint16_t CYAN  = 0x3DDF;
 static constexpr uint16_t ICE   = 0xEFFF;
 static constexpr uint16_t CORAL = 0xF2AA;
 static constexpr uint16_t PALE  = 0xC618;
-static constexpr uint16_t DARK  = 0x4208;
+static constexpr uint16_t RED   = 0xF800;
 
 static void segH(int x,int y,int w,uint16_t c) {
   gfx.fillRoundRect(x,y,w,4,2,c);
@@ -248,15 +248,15 @@ static void drawIndoorHouseIcon(int cx,int cy) {
 // The vertical centre partition is intentional; no readings are drawn over it.
 static void drawHouseBoundary() {
   // Roof
-  gfx.drawLine(198,49,246,12,CYAN);
-  gfx.drawLine(246,12,294,49,CORAL);
+  gfx.drawLine(208,49,256,12,CYAN);
+  gfx.drawLine(256,12,304,49,CORAL);
   // Outer walls and central partition
-  gfx.drawFastVLine(198,49,79,CYAN);
-  gfx.drawFastVLine(246,49,79,CYAN);
-  gfx.drawFastVLine(294,49,79,CORAL);
+  gfx.drawFastVLine(208,49,79,CYAN);
+  gfx.drawFastVLine(256,49,79,CYAN);
+  gfx.drawFastVLine(304,49,79,CORAL);
   // Base
-  gfx.drawFastHLine(198,128,48,CYAN);
-  gfx.drawFastHLine(246,128,48,CORAL);
+  gfx.drawFastHLine(208,128,48,CYAN);
+  gfx.drawFastHLine(256,128,48,CORAL);
 }
 
 static void drawDashboard() {
