@@ -314,26 +314,64 @@ static void drawTrendArrowSteady(int x, int y, uint16_t color) {
   gfx.drawLine(x + 7, y, x + 2, y + 4, color);
 }
 
+static int16_t textWidth12(const char *s) {
+  gfx.setFont(&FreeSansBold12pt7b);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx.getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
+  gfx.setFont();
+  return (int16_t)w;
+}
+
+static int16_t textWidth9(const char *s) {
+  gfx.setFont(&FreeSansBold9pt7b);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx.getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
+  gfx.setFont();
+  return (int16_t)w;
+}
+
+static void drawCenteredText12(int centerX, int baseline, const char *s, uint16_t c) {
+  drawText12(centerX - textWidth12(s) / 2, baseline, s, c);
+}
+
+static void drawCenteredText9(int centerX, int baseline, const char *s, uint16_t c) {
+  drawText9(centerX - textWidth9(s) / 2, baseline, s, c);
+}
+
 static void drawDemoReadings() {
-  // Outdoor readings: optical centers aligned with the three left-side icons.
+  // Outdoor temperature is deliberately larger; keep the arrow clear of °C.
   drawText12(58, 35, "+22.2", WHITE);
   drawDegreeC(119, 35, WHITE);
-  drawTrendArrowUp(166, 26, WHITE);
+  drawTrendArrowUp(180, 26, WHITE);
 
-  // Absolute humidity uses the proper superscript 3, drawn separately.
-  drawText12(58, 72, "65% / 12.8 g/m", WHITE);
+  // Place the superscript 3 immediately after the measured text, not at a
+  // hard-coded x coordinate (which caused it to overlap the final letters).
+  const char *outHumidity = "65% / 12.8 g/m";
+  drawText12(58, 72, outHumidity, WHITE);
   gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(188, 64);
+  int16_t bx, by;
+  uint16_t bw, bh;
+  gfx.getTextBounds(outHumidity, 58, 72, &bx, &by, &bw, &bh);
+  gfx.setCursor(58 + bw + 1, 64);
   gfx.print("3");
   gfx.setFont();
 
   drawText12(58, 108, "760 mmHg", WHITE);
-  drawTrendArrowSteady(194, 96, WHITE);
+  drawTrendArrowSteady(194, 99, WHITE);
 
-  // Indoor: relative and absolute humidity; unit intentionally omitted.
-  drawText12(305, 73, "+24.7 C", 0xFFDF);
-  drawText12(305, 108, "52% / 10.4", 0xFFDF);
+  // Center both indoor rows in the available house area. The temperature
+  // has a proper raised degree mark and full-size C; humidity is smaller.
+  const uint16_t indoorColor = 0xFFDF;
+  const int indoorCenter = 350;
+  const char *indoorTemp = "+24.7";
+  drawCenteredText12(indoorCenter - 7, 73, indoorTemp, indoorColor);
+  int tempWidth = textWidth12(indoorTemp);
+  drawDegreeC(indoorCenter - 7 + tempWidth + 1, 73, indoorColor);
+
+  drawCenteredText9(indoorCenter, 108, "52% / 10.4", indoorColor);
 }
 
 static void drawDashboard() {
