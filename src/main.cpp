@@ -5,7 +5,6 @@
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
 #include <PNGdec.h>
-#include <mbedtls/base64.h>
 #include "dashboard_background.h"
 
 // ESP32-C3 SuperMini + NV3007 142x428 SPI module
@@ -245,7 +244,6 @@ static void drawThermometer(int cx,int cy) {
 // House outline on the RIGHT, matching the approved 428x142 composition.
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
-static uint8_t pngData[58000];
 
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
@@ -257,24 +255,12 @@ static int pngDraw(PNGDRAW *pDraw) {
 }
 
 static bool drawBitmapBackground() {
-  // ESP32-C3 flash is memory-mapped: decode Base64 directly from PROGMEM.
-  // Do NOT allocate a second 76 KB Base64 buffer in DRAM.
-  constexpr size_t encodedSize = sizeof(dashboardBackgroundBase64) - 1;
-  size_t decodedSize = 0;
-  const unsigned char *encoded =
-      reinterpret_cast<const unsigned char *>(dashboardBackgroundBase64);
-
-  int rc = mbedtls_base64_decode(
-      pngData, sizeof(pngData), &decodedSize, encoded, encodedSize);
-  if (rc != 0) {
-    Serial.printf("Base64 decode failed: %d, encoded=%u, output cap=%u\\n",
-                  rc, (unsigned)encodedSize, (unsigned)sizeof(pngData));
-    return false;
-  }
-
-  rc = png.openRAM(pngData, (int)decodedSize, pngDraw);
+  // PNGdec reads this image directly from flash; no PNG-sized DRAM buffer.
+  constexpr size_t pngSize = sizeof(dashboardBackgroundPng);
+  int rc = png.openFLASH(const_cast<uint8_t *>(dashboardBackgroundPng),
+                         (int)pngSize, pngDraw);
   if (rc != PNG_SUCCESS) {
-    Serial.printf("PNG openRAM failed: %d, bytes=%u\\n", rc, (unsigned)decodedSize);
+    Serial.printf("PNG openFLASH failed: %d, bytes=%u\n", rc, (unsigned)pngSize);
     return false;
   }
   Serial.printf("PNG info: %dx%d, bpp=%d, type=%d\\n",
