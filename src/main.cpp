@@ -244,14 +244,15 @@ static void drawHouseBoundary() {
   const uint16_t gold = 0xFEA0;
   // Roof and body outline, with a soft-looking double stroke.
   for (int k=0; k<3; ++k) {
-    gfx.drawLine(276,72+k,350,8+k,gold);
-    gfx.drawLine(350,8+k,422,72+k,gold);
-    gfx.drawLine(276,72+k,293,72+k,gold);
-    gfx.drawLine(422,72+k,407,72+k,gold);
+    gfx.drawLine(263,72+k,344,8+k,gold);
+    gfx.drawLine(344,8+k,425,72+k,gold);
+    gfx.drawLine(263,72+k,279,72+k,gold);
+    gfx.drawLine(425,72+k,409,72+k,gold);
   }
-  gfx.fillRect(291,71,3,61,gold);
-  gfx.fillRect(405,71,3,61,gold);
-  gfx.fillRect(291,129,117,3,gold);
+  gfx.fillRect(277,71,3,61,gold);
+  gfx.fillRect(408,71,3,61,gold);
+  gfx.fillRect(277,129,67,3,gold);
+  gfx.fillRect(344,129,67,3,gold);
 }
 
 static void drawGradientBackground() {
@@ -286,12 +287,12 @@ static void drawDashboard() {
 
   // House and INDOOR readings on the right.
   drawHouseBoundary();
-  drawThermometer(309,48);
-  x=drawNumber(326,31,"+24.7",ICE);
+  drawThermometer(291,48);
+  x=drawNumber(307,31,"+24.7",ICE);
   drawDegreeC(x+1,31,ICE);
 
-  drawDrop(309,96,CORAL);
-  x=drawNumber(326,78,"52",ICE);
+  drawDrop(291,96,CORAL);
+  x=drawNumber(307,78,"52",ICE);
   drawText9(x+3,105,"%",CORAL);
 
   lcdFlush();
