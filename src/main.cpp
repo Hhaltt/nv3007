@@ -4,6 +4,9 @@
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
+#include <PNGdec.h>
+#include <mbedtls/base64.h>
+#include "dashboard_background.h"
 
 // ESP32-C3 SuperMini + NV3007 142x428 SPI module
 // Logical layout is 428x142 landscape.
@@ -240,37 +243,35 @@ static void drawThermometer(int cx,int cy) {
 // Main house: one unmistakable roof, two outer walls and a floor.
 // No central wall, arrow, labels, or readings over the silhouette.
 // House outline on the RIGHT, matching the approved 428x142 composition.
-static void drawHouseBoundary() {
-  const uint16_t gold = 0xFEA0;
-  // Roof and body outline, with a soft-looking double stroke.
-  for (int k=0; k<3; ++k) {
-    gfx.drawLine(263,72+k,344,8+k,gold);
-    gfx.drawLine(344,8+k,425,72+k,gold);
-    gfx.drawLine(263,72+k,279,72+k,gold);
-    gfx.drawLine(425,72+k,409,72+k,gold);
+// Decode and draw the approved 428x142 PNG background into the framebuffer.
+static PNG png;
+static uint8_t pngData[4096];
+
+static int pngDraw(PNGDRAW *pDraw) {
+  uint16_t line[W];
+  png.getLineAsRGB565(pDraw, line, PNG_RGB565_LITTLE_ENDIAN, 0xFFFFFFFF);
+  for (int x=0; x<pDraw->iWidth && x<W; ++x) {
+    gfx.drawPixel(x, pDraw->y, line[x]);
   }
-  gfx.fillRect(277,71,3,61,gold);
-  gfx.fillRect(408,71,3,61,gold);
-  gfx.fillRect(277,129,67,3,gold);
-  gfx.fillRect(344,129,67,3,gold);
+  return 1;
 }
 
-static void drawGradientBackground() {
-  for (int y=0; y<H; ++y) {
-    for (int x=0; x<W; ++x) {
-      uint8_t t = (uint8_t)(x * 255 / (W - 1));
-      uint16_t left = 0x020C, right = 0x10A5;
-      uint8_t r1=(left>>11)&31, g1=(left>>5)&63, b1=left&31;
-      uint8_t r2=(right>>11)&31, g2=(right>>5)&63, b2=right&31;
-      uint16_t c=(((r1*(255-t)+r2*t)/255)<<11) |
-                 (((g1*(255-t)+g2*t)/255)<<5) |
-                 ((b1*(255-t)+b2*t)/255);
-      gfx.drawPixel(x,y,c);
-    }
-  }
+static bool drawBitmapBackground() {
+  static char encoded[4200];
+  strcpy_P(encoded, dashboardBackgroundBase64);
+  size_t decodedSize = 0;
+  int rc = mbedtls_base64_decode(pngData, sizeof(pngData), &decodedSize,
+                                 (const unsigned char*)encoded, strlen(encoded));
+  if (rc != 0) return false;
+  rc = png.openRAM(pngData, (int)decodedSize, pngDraw);
+  if (rc != PNG_SUCCESS) return false;
+  rc = png.decode(NULL, 0);
+  png.close();
+  return rc == PNG_SUCCESS;
 }
+
 static void drawDashboard() {
-  drawGradientBackground();
+  if (!drawBitmapBackground()) {\n    gfx.fillScreen(BLACK);\n  }
 
   // OUTDOOR readings on the left.
   drawThermometer(25,25);
