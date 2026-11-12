@@ -362,16 +362,35 @@ static void drawDemoReadings() {
   drawText12(58, 108, "760 mmHg", WHITE);
   drawTrendArrowSteady(194, 99, WHITE);
 
-  // Center both indoor rows in the available house area. The temperature
-  // has a proper raised degree mark and full-size C; humidity is smaller.
+  // Indoor values stay strictly inside the house's usable window.
+  // Draw the complete temperature (including °C) as one measured group.
   const uint16_t indoorColor = 0xFFDF;
-  const int indoorCenter = 350;
-  const char *indoorTemp = "+24.7";
-  drawCenteredText12(indoorCenter - 7, 73, indoorTemp, indoorColor);
-  int tempWidth = textWidth12(indoorTemp);
-  drawDegreeC(indoorCenter - 7 + tempWidth + 1, 73, indoorColor);
+  const int indoorCenter = 357;
+  const int indoorLeft = 312;
+  const int indoorRight = 402;
 
-  drawCenteredText9(indoorCenter, 108, "52% / 10.4", indoorColor);
+  const char *indoorTemp = "+24.7";
+  const int valueW = textWidth9(indoorTemp);
+  const int degreeW = 6;  // small raised degree ring plus spacing
+  const int unitW = textWidth9("C");
+  const int fullTempW = valueW + degreeW + unitW + 2;
+  int tempX = indoorCenter - fullTempW / 2;
+  if (tempX < indoorLeft) tempX = indoorLeft;
+  if (tempX + fullTempW > indoorRight) tempX = indoorRight - fullTempW;
+
+  drawText9(tempX, 73, indoorTemp, indoorColor);
+  const int degreeX = tempX + valueW + 1;
+  gfx.drawCircle(degreeX + 2, 64, 2, indoorColor);
+  drawText9(degreeX + 6, 73, "C", indoorColor);
+
+  // No unit here by design; compact spacing keeps the entire reading
+  // inside the walls rather than clipping the final digits.
+  const char *indoorHumidity = "52% 10.4";
+  const int humidityW = textWidth9(indoorHumidity);
+  int humidityX = indoorCenter - humidityW / 2;
+  if (humidityX < indoorLeft) humidityX = indoorLeft;
+  if (humidityX + humidityW > indoorRight) humidityX = indoorRight - humidityW;
+  drawText9(humidityX, 108, indoorHumidity, indoorColor);
 }
 
 static void drawDashboard() {
