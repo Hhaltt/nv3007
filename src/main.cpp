@@ -364,7 +364,7 @@ static void drawOutdoorTemperature() {
   // Larger 18pt temperature; align the glyph group with the thermometer icon.
   const int baseline = 36;
   const int plusX = 62;
-  drawCustomPlus(plusX, 22, WHITE, 5, 6, 2);
+  drawCustomPlus(plusX, 22, WHITE);
 
   const char *value = "22.2";
   const int valueX = 74;
