@@ -328,101 +328,90 @@ static TextMetrics measureText(const char *s, const GFXfont *font) {
   return {x1, w};
 }
 
-static int16_t textWidth12(const char *s) {
-  return measureText(s, &FreeSansBold12pt7b).width;
-}
-static int16_t textWidth9(const char *s) {
-  return measureText(s, &FreeSansBold9pt7b).width;
+static int textRightEdge(int cursorX, const char *s, const GFXfont *font) {
+  const TextMetrics m = measureText(s, font);
+  return cursorX + m.xOffset + m.width;
 }
 
-// Center the actual ink bounds, accounting for the font's left bearing.
 static int centeredCursorX(int centerX, const char *s, const GFXfont *font) {
   const TextMetrics m = measureText(s, font);
-  return centerX - (m.xOffset + (int)m.width / 2);
-}
-static void drawCenteredText12(int centerX, int baseline, const char *s, uint16_t c) {
-  drawText12(centeredCursorX(centerX, s, &FreeSansBold12pt7b), baseline, s, c);
-}
-static void drawCenteredText9(int centerX, int baseline, const char *s, uint16_t c) {
-  drawText9(centeredCursorX(centerX, s, &FreeSansBold9pt7b), baseline, s, c);
+  return centerX - m.xOffset - (int)m.width / 2;
 }
 
-static void drawCustomPlus(int x, int centerY, uint16_t color, int halfW = 5, int halfH = 5, int thickness = 2) {
-  gfx.fillRect(x - halfW, centerY - thickness / 2, halfW * 2 + 1, thickness, color);
-  gfx.fillRect(x - thickness / 2, centerY - halfH, thickness, halfH * 2 + 1, color);
+static void drawTextAtCenter(int centerX, int baseline, const char *s,
+                             const GFXfont *font, uint16_t color) {
+  const int x = centeredCursorX(centerX, s, font);
+  gfx.setFont(font);
+  gfx.setTextColor(color);
+  gfx.setCursor(x, baseline);
+  gfx.print(s);
+  gfx.setFont();
+}
+
+static void drawCustomPlus(int x, int centerY, uint16_t color) {
+  gfx.fillRect(x - 4, centerY - 1, 9, 2, color);
+  gfx.fillRect(x - 1, centerY - 5, 2, 11, color);
 }
 
 static void drawOutdoorTemperature() {
-  // Separate the plus from the digits so its optical position is predictable.
-  drawCustomPlus(63, 22, WHITE, 4, 5, 2);
-  drawText12(73, 35, "22.2", WHITE);
-  drawDegreeC(128, 35, WHITE);
-  drawTrendArrowUp(180, 26, WHITE);
+  // Row center matches the outdoor thermometer icon in the background.
+  const int baseline = 29;
+  const int plusX = 62;
+  drawCustomPlus(plusX, 21, WHITE);
+
+  const char *value = "22.2";
+  const int valueX = 72;
+  drawText12(valueX, baseline, value, WHITE);
+  const int right = textRightEdge(valueX, value, &FreeSansBold12pt7b);
+
+  // Degree and C are positioned from the measured right edge of the digits.
+  gfx.drawCircle(right + 5, baseline - 11, 3, WHITE);
+  drawText9(right + 11, baseline, "C", WHITE);
+
+  drawTrendArrowUp(161, 21, WHITE);
 }
 
 static void drawOutdoorHumidity() {
   const char *prefix = "65% / 12.8 g/m";
   const int x = 58;
-  drawText12(x, 72, prefix, WHITE);
+  const int baseline = 69;
+  drawText9(x, baseline, prefix, WHITE);
 
-  // getTextBounds x1 is an absolute bound for the supplied cursor origin.
-  // Use the right edge (bx + bw), not cursorX + width: FreeSans has bearings.
-  gfx.setFont(&FreeSansBold12pt7b);
-  int16_t bx, by;
-  uint16_t bw, bh;
-  gfx.getTextBounds(prefix, x, 72, &bx, &by, &bw, &bh);
-  const int superscriptX = bx + bw + 1;
+  const int right = textRightEdge(x, prefix, &FreeSansBold9pt7b);
   gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(superscriptX, 64);
+  gfx.setCursor(right + 1, baseline - 6);
   gfx.print("3");
   gfx.setFont();
 }
 
+static void drawOutdoorPressure() {
+  drawText12(58, 108, "760 mmHg", WHITE);
+  drawTrendArrowSteady(176, 101, WHITE);
+}
+
 static void drawIndoorTemperature() {
   const uint16_t color = 0xFFDF;
-  const int centerX = 357;
-  const int leftLimit = 310;
-  const int rightLimit = 402;
-  const char *value = "24.7";
-  const TextMetrics valueM = measureText(value, &FreeSansBold12pt7b);
-  const TextMetrics cM = measureText("C", &FreeSansBold12pt7b);
-  const int degreeGap = 5;
-  const int groupW = valueM.width + degreeGap + 5 + cM.width;
-  int cursorX = centerX - groupW / 2 - valueM.xOffset;
-  if (cursorX + valueM.xOffset < leftLimit) cursorX = leftLimit - valueM.xOffset;
-  if (cursorX + valueM.xOffset + groupW > rightLimit)
-    cursorX = rightLimit - groupW - valueM.xOffset;
+  const int centerX = 329;
+  const int baseline = 69;
+  const char *value = "+24.7";
+  const int valueX = centeredCursorX(centerX - 5, value, &FreeSansBold9pt7b);
 
-  drawCustomPlus(cursorX - 8, 59, color, 4, 5, 2);
-  drawText12(cursorX, 73, value, color);
-  const int degreeX = cursorX + valueM.width + degreeGap;
-  gfx.drawCircle(degreeX + 2, 59, 3, color);
-  drawText12(degreeX + 8, 73, "C", color);
+  drawText9(valueX, baseline, value, color);
+  const int right = textRightEdge(valueX, value, &FreeSansBold9pt7b);
+  gfx.drawCircle(right + 4, baseline - 9, 2, color);
+  drawText9(right + 9, baseline, "C", color);
 }
 
 static void drawIndoorHumidity() {
-  const uint16_t color = 0xFFDF;
-  const char *value = "52% 10.4";
-  const int centerX = 357;
-  const int leftLimit = 310;
-  const int rightLimit = 402;
-  const TextMetrics m = measureText(value, &FreeSansBold9pt7b);
-  int cursorX = centeredCursorX(centerX, value, &FreeSansBold9pt7b);
-  int inkLeft = cursorX + m.xOffset;
-  if (inkLeft < leftLimit) cursorX += leftLimit - inkLeft;
-  int inkRight = cursorX + m.xOffset + m.width;
-  if (inkRight > rightLimit) cursorX -= inkRight - rightLimit;
-  drawText9(cursorX, 108, value, color);
+  // No unit suffix; centered within the clear orange area.
+  drawTextAtCenter(329, 108, "52% / 10.4", &FreeSansBold9pt7b, 0xFFDF);
 }
 
 static void drawDemoReadings() {
   drawOutdoorTemperature();
   drawOutdoorHumidity();
-
-  drawText12(58, 108, "760 mmHg", WHITE);
-  drawTrendArrowSteady(194, 99, WHITE);
-
+  drawOutdoorPressure();
   drawIndoorTemperature();
   drawIndoorHumidity();
 }
