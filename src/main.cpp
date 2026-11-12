@@ -271,7 +271,9 @@ static bool drawBitmapBackground() {
 }
 
 static void drawDashboard() {
-  if (!drawBitmapBackground()) {\n    gfx.fillScreen(BLACK);\n  }
+  if (!drawBitmapBackground()) {
+    gfx.fillScreen(BLACK);
+  }
 
   // OUTDOOR readings on the left.
   drawThermometer(25,25);
@@ -287,7 +289,7 @@ static void drawDashboard() {
   drawText9(x+2,128,"hPa",ORANGE);
 
   // House and INDOOR readings on the right.
-  drawHouseBoundary();
+
   drawThermometer(291,48);
   x=drawNumber(307,31,"+24.7",ICE);
   drawDegreeC(x+1,31,ICE);
