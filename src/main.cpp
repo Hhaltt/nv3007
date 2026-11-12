@@ -313,18 +313,18 @@ static void drawTrendArrowSteady(int x, int y, uint16_t color) {
 
 static void drawDemoReadings() {
   // Outdoor: one consistent font size for all three rows.
-  drawText12(58, 42, "+22.2", WHITE);
-  drawDegreeC(119, 29, WHITE);
-  drawTrendArrowUp(155, 34, WHITE);
+  drawText12(58, 35, "+22.2", WHITE);
+  drawDegreeC(119, 21, WHITE);
+  drawTrendArrowUp(155, 26, WHITE);
 
-  drawText12(58, 78, "65% / 12.8 g/m3", WHITE);
+  drawText12(58, 72, "65% / 12.8 g/m3", WHITE);
 
-  drawText12(58, 113, "760 mmHg", WHITE);
-  drawTrendArrowSteady(194, 105, WHITE);
+  drawText12(58, 108, "760 mmHg", WHITE);
+  drawTrendArrowSteady(194, 99, WHITE);
 
   // Indoor: larger temperature; humidity is shown only as a percentage.
-  drawText12(305, 77, "+24.7 C", 0xFFDF);
-  drawText12(305, 112, "52%", 0xFFDF);
+  drawText12(305, 73, "+24.7 C", 0xFFDF);
+  drawText12(305, 108, "52%", 0xFFDF);
 }
 
 static void drawDashboard() {
