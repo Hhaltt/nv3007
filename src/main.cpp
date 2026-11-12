@@ -297,12 +297,43 @@ static bool drawBitmapBackground() {
   return rc == PNG_SUCCESS;
 }
 
+// Temporary demo values for checking the approved v5 layout on the panel.
+// These constants will later be replaced by live sensor values.
+static void drawTrendArrowUp(int x, int y, uint16_t color) {
+  gfx.drawLine(x, y + 8, x, y - 7, color);
+  gfx.drawLine(x, y - 7, x - 5, y - 2, color);
+  gfx.drawLine(x, y - 7, x + 5, y - 2, color);
+}
+
+static void drawTrendArrowSteady(int x, int y, uint16_t color) {
+  gfx.drawLine(x - 7, y, x + 7, y, color);
+  gfx.drawLine(x + 7, y, x + 2, y - 4, color);
+  gfx.drawLine(x + 7, y, x + 2, y + 4, color);
+}
+
+static void drawDemoReadings() {
+  // Outdoor: one consistent font size for all three rows.
+  drawText12(58, 42, "+22.2", WHITE);
+  drawDegreeC(119, 29, WHITE);
+  drawTrendArrowUp(155, 34, WHITE);
+
+  drawText12(58, 78, "65% / 12.8 g/m3", WHITE);
+
+  drawText12(58, 113, "760 mmHg", WHITE);
+  drawTrendArrowSteady(194, 105, WHITE);
+
+  // Indoor: larger temperature; humidity is shown only as a percentage.
+  drawText12(305, 77, "+24.7 C", 0xFFDF);
+  drawText12(305, 112, "52%", 0xFFDF);
+}
+
 static void drawDashboard() {
   if (!drawBitmapBackground()) {
     gfx.fillScreen(BLACK);
     Serial.println("ERROR: dashboard PNG decode failed");
   } else {
     Serial.println("Dashboard PNG decoded: 428x142");
+    drawDemoReadings();
   }
   lcdFlush();
 }
