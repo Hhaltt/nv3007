@@ -151,7 +151,7 @@ static constexpr uint16_t ICE   = 0xEFFF;
 static constexpr uint16_t CORAL = 0xF2AA;
 static constexpr uint16_t PALE  = 0xC618;
 static constexpr uint16_t RED   = 0xF800;
-static constexpr uint16_t ORANGE = 0xFD20;
+
 
 static void segH(int x,int y,int w,uint16_t c) {
   gfx.fillRoundRect(x,y,w,4,2,c);
