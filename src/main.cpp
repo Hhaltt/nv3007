@@ -245,7 +245,7 @@ static void drawThermometer(int cx,int cy) {
 // House outline on the RIGHT, matching the approved 428x142 composition.
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
-static uint8_t pngData[32768];
+static uint8_t pngData[60000];
 
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
@@ -257,11 +257,14 @@ static int pngDraw(PNGDRAW *pDraw) {
 }
 
 static bool drawBitmapBackground() {
-  static char encoded[40000];
-  strcpy_P(encoded, dashboardBackgroundBase64);
+  // ESP32-C3 maps PROGMEM strings into its address space; decode directly
+  // from flash and avoid copying the 76 KB Base64 string into scarce RAM.
+  constexpr size_t encodedSize = sizeof(dashboardBackgroundBase64) - 1;
   size_t decodedSize = 0;
-  int rc = mbedtls_base64_decode(pngData, sizeof(pngData), &decodedSize,
-                                 (const unsigned char*)encoded, strlen(encoded));
+  int rc = mbedtls_base64_decode(
+      pngData, sizeof(pngData), &decodedSize,
+      reinterpret_cast<const unsigned char *>(dashboardBackgroundBase64),
+      encodedSize);
   if (rc != 0) return false;
   rc = png.openRAM(pngData, (int)decodedSize, pngDraw);
   if (rc != PNG_SUCCESS) return false;
