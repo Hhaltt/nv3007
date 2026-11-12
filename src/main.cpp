@@ -245,35 +245,35 @@ static void drawThermometer(int cx,int cy) {
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
 
-// Subtle ordered dithering in RGB565 space. PNGdec already returns RGB565,
-// so this breaks up visible contouring in smooth dark gradients without
-// allocating another framebuffer or changing the PNG decoding path.
-static uint16_t dither565(uint16_t color, int x, int y) {
+// Ordered dithering is applied to the original 8-bit RGB PNG pixels,
+// BEFORE reducing them to RGB565. This preserves average color in gradients.
+static uint8_t quantizeDither(uint8_t value, uint8_t maxLevel, int x, int y) {
   static const uint8_t bayer4[4][4] = {
     { 0,  8,  2, 10},
     {12,  4, 14,  6},
     { 3, 11,  1,  9},
     {15,  7, 13,  5}
   };
-  const int t = bayer4[y & 3][x & 3];
-  int r = (color >> 11) & 0x1F;
-  int g = (color >> 5) & 0x3F;
-  int b = color & 0x1F;
-
-  // Alternate adjacent RGB565 levels in a 4x4 pattern. Keep extremes intact.
-  const int delta = (t < 8) ? -1 : 1;
-  if (r > 1 && r < 30) r += delta;
-  if (g > 1 && g < 62) g += ((t & 1) ? delta : -delta);
-  if (b > 1 && b < 30) b += ((t & 2) ? delta : -delta);
-
-  return (uint16_t)((r << 11) | (g << 5) | b);
+  const uint16_t scaled = (uint16_t)value * maxLevel;
+  uint8_t level = scaled / 255;
+  const uint16_t remainder = scaled % 255;
+  const uint16_t threshold = (uint16_t)bayer4[y & 3][x & 3] * 16;
+  if (level < maxLevel && remainder > threshold) ++level;
+  return level;
 }
 
 static int pngDraw(PNGDRAW *pDraw) {
-  uint16_t line[W];
-  png.getLineAsRGB565(pDraw, line, PNG_RGB565_LITTLE_ENDIAN, 0xFFFFFFFF);
-  for (int x=0; x<pDraw->iWidth && x<W; ++x) {
-    gfx.drawPixel(x, pDraw->y, dither565(line[x], x, pDraw->y));
+  // This dashboard PNG is 8-bit truecolor RGB (3 bytes per pixel).
+  // Read the native scanline so dithering happens before RGB565 quantization.
+  const uint8_t *src = pDraw->pPixels;
+  for (int x = 0; x < pDraw->iWidth && x < W; ++x) {
+    const uint8_t r = src[x * 3 + 0];
+    const uint8_t g = src[x * 3 + 1];
+    const uint8_t b = src[x * 3 + 2];
+    const uint16_t rr = quantizeDither(r, 31, x, pDraw->y);
+    const uint16_t gg = quantizeDither(g, 63, x, pDraw->y);
+    const uint16_t bb = quantizeDither(b, 31, x, pDraw->y);
+    gfx.drawPixel(x, pDraw->y, (rr << 11) | (gg << 5) | bb);
   }
   return 1;
 }
