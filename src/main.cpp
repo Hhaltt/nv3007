@@ -239,18 +239,19 @@ static void drawThermometer(int cx,int cy) {
 
 // Main house: one unmistakable roof, two outer walls and a floor.
 // No central wall, arrow, labels, or readings over the silhouette.
+// House outline on the RIGHT, matching the approved 428x142 composition.
 static void drawHouseBoundary() {
-  const uint16_t left=CYAN, right=CORAL;
-  // Thick roof slopes.
-  for(int k=0;k<3;k++) {
-    gfx.drawLine(183,49+k,232,12+k,left);
-    gfx.drawLine(232,12+k,281,49+k,right);
+  const uint16_t gold = 0xFEA0;
+  // Roof and body outline, with a soft-looking double stroke.
+  for (int k=0; k<3; ++k) {
+    gfx.drawLine(276,72+k,350,8+k,gold);
+    gfx.drawLine(350,8+k,422,72+k,gold);
+    gfx.drawLine(276,72+k,293,72+k,gold);
+    gfx.drawLine(422,72+k,407,72+k,gold);
   }
-  // Outer walls and bottom edge.
-  gfx.fillRect(182,49,3,82,left);
-  gfx.fillRect(280,49,3,82,right);
-  gfx.fillRect(182,129,50,3,left);
-  gfx.fillRect(232,129,51,3,right);
+  gfx.fillRect(291,71,3,61,gold);
+  gfx.fillRect(405,71,3,61,gold);
+  gfx.fillRect(291,129,117,3,gold);
 }
 
 static void drawGradientBackground() {
@@ -270,30 +271,28 @@ static void drawGradientBackground() {
 static void drawDashboard() {
   drawGradientBackground();
 
-  // House is confined to the central 100 px wide zone.
-  drawHouseBoundary();
-
-  // OUTDOOR: three vertically aligned rows, all kept left of x=175.
-  drawCloudRain(22,25);
+  // OUTDOOR readings on the left.
+  drawThermometer(25,25);
   int x=drawNumber(49,9,"+22.2",ICE);
   drawDegreeC(x+1,9,ICE);
 
-  drawDrop(22,79,CYAN);
-  x=drawNumber(42,61,"65",ICE);
+  drawDrop(25,79,CYAN);
+  x=drawNumber(49,61,"65",ICE);
   drawText9(x+2,88,"%",CYAN);
 
-  drawBarometer(22,119);
-  x=drawNumber(42,101,"1013",ICE);
+  drawBarometer(25,119);
+  x=drawNumber(49,101,"1013",ICE);
   drawText9(x+2,128,"hPa",ORANGE);
 
-  // INDOOR: thermometer and temperature, then humidity.
-  drawThermometer(305,27);
-  x=drawNumber(326,9,"+24.7",ICE);
-  drawDegreeC(x+1,9,ICE);
+  // House and INDOOR readings on the right.
+  drawHouseBoundary();
+  drawThermometer(309,48);
+  x=drawNumber(326,31,"+24.7",ICE);
+  drawDegreeC(x+1,31,ICE);
 
-  drawDrop(305,79,CORAL);
-  x=drawNumber(325,61,"52",ICE);
-  drawText9(x+3,88,"%",CORAL);
+  drawDrop(309,96,CORAL);
+  x=drawNumber(326,78,"52",ICE);
+  drawText9(x+3,105,"%",CORAL);
 
   lcdFlush();
 }
