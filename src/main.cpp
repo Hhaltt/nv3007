@@ -197,9 +197,11 @@ static void drawText12(int x,int baseline,const char *s,uint16_t c) {
   gfx.print(s);
   gfx.setFont();
 }
-static void drawDegreeC(int x,int y,uint16_t c) {
-  gfx.drawCircle(x+3,y+5,3,c);
-  drawText9(x+10,y+13,"C",c);
+static void drawDegreeC(int x,int baseline,uint16_t c) {
+  // Match the main value's 12pt weight/height: degree is raised,
+  // while the C shares the same baseline as the temperature digits.
+  gfx.drawCircle(x+4,baseline-15,4,c);
+  drawText12(x+12,baseline,"C",c);
 }
 
 // Solid weather cloud and rain drops.
@@ -306,25 +308,32 @@ static void drawTrendArrowUp(int x, int y, uint16_t color) {
 }
 
 static void drawTrendArrowSteady(int x, int y, uint16_t color) {
+  // Centered on the optical midline of the pressure text.
   gfx.drawLine(x - 7, y, x + 7, y, color);
   gfx.drawLine(x + 7, y, x + 2, y - 4, color);
   gfx.drawLine(x + 7, y, x + 2, y + 4, color);
 }
 
 static void drawDemoReadings() {
-  // Outdoor: one consistent font size for all three rows.
+  // Outdoor readings: optical centers aligned with the three left-side icons.
   drawText12(58, 35, "+22.2", WHITE);
-  drawDegreeC(119, 21, WHITE);
-  drawTrendArrowUp(155, 26, WHITE);
+  drawDegreeC(119, 35, WHITE);
+  drawTrendArrowUp(166, 26, WHITE);
 
-  drawText12(58, 72, "65% / 12.8 g/m3", WHITE);
+  // Absolute humidity uses the proper superscript 3, drawn separately.
+  drawText12(58, 72, "65% / 12.8 g/m", WHITE);
+  gfx.setFont(&FreeSansBold9pt7b);
+  gfx.setTextColor(WHITE);
+  gfx.setCursor(188, 64);
+  gfx.print("3");
+  gfx.setFont();
 
   drawText12(58, 108, "760 mmHg", WHITE);
-  drawTrendArrowSteady(194, 99, WHITE);
+  drawTrendArrowSteady(194, 96, WHITE);
 
-  // Indoor: larger temperature; humidity is shown only as a percentage.
+  // Indoor: relative and absolute humidity; unit intentionally omitted.
   drawText12(305, 73, "+24.7 C", 0xFFDF);
-  drawText12(305, 108, "52%", 0xFFDF);
+  drawText12(305, 108, "52% / 10.4", 0xFFDF);
 }
 
 static void drawDashboard() {
