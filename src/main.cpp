@@ -387,7 +387,7 @@ static void drawOutdoorHumidity() {
 
 static void drawOutdoorPressure() {
   drawText12(58, 108, "760 mmHg", WHITE);
-  drawTrendArrowSteady(176, 101, WHITE);
+  drawTrendArrowSteady(190, 101, WHITE);
 }
 
 static void drawIndoorTemperature() {
