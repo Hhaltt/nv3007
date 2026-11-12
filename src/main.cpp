@@ -245,11 +245,11 @@ static void drawThermometer(int cx,int cy) {
 // House outline on the RIGHT, matching the approved 428x142 composition.
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
-static uint8_t pngData[4096];
+static uint8_t pngData[32768];
 
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
-  png.getLineAsRGB565(pDraw, line, PNG_RGB565_BIG_ENDIAN, 0xFFFFFFFF);
+  png.getLineAsRGB565(pDraw, line, PNG_RGB565_LITTLE_ENDIAN, 0xFFFFFFFF);
   for (int x=0; x<pDraw->iWidth && x<W; ++x) {
     gfx.drawPixel(x, pDraw->y, line[x]);
   }
@@ -257,7 +257,7 @@ static int pngDraw(PNGDRAW *pDraw) {
 }
 
 static bool drawBitmapBackground() {
-  static char encoded[4200];
+  static char encoded[40000];
   strcpy_P(encoded, dashboardBackgroundBase64);
   size_t decodedSize = 0;
   int rc = mbedtls_base64_decode(pngData, sizeof(pngData), &decodedSize,
@@ -271,8 +271,6 @@ static bool drawBitmapBackground() {
 }
 
 static void drawDashboard() {
-  // The approved PNG already contains the complete visual composition.
-  // Do not redraw icons, numbers or the house over it.
   if (!drawBitmapBackground()) {
     gfx.fillScreen(BLACK);
     Serial.println("ERROR: dashboard PNG decode failed");
