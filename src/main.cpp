@@ -253,19 +253,33 @@ static void drawHouseBoundary() {
   gfx.fillRect(232,129,51,3,right);
 }
 
+static void drawGradientBackground() {
+  for (int y=0; y<H; ++y) {
+    for (int x=0; x<W; ++x) {
+      uint8_t t = (uint8_t)(x * 255 / (W - 1));
+      uint16_t left = 0x020C, right = 0x10A5;
+      uint8_t r1=(left>>11)&31, g1=(left>>5)&63, b1=left&31;
+      uint8_t r2=(right>>11)&31, g2=(right>>5)&63, b2=right&31;
+      uint16_t c=(((r1*(255-t)+r2*t)/255)<<11) |
+                 (((g1*(255-t)+g2*t)/255)<<5) |
+                 ((b1*(255-t)+b2*t)/255);
+      gfx.drawPixel(x,y,c);
+    }
+  }
+}
 static void drawDashboard() {
-  gfx.fillScreen(BLACK);
+  drawGradientBackground();
 
   // House is confined to the central 100 px wide zone.
   drawHouseBoundary();
 
   // OUTDOOR: three vertically aligned rows, all kept left of x=175.
   drawCloudRain(22,25);
-  int x=drawNumber(49,9,"-5.2",ICE);
+  int x=drawNumber(49,9,"+22.2",ICE);
   drawDegreeC(x+1,9,ICE);
 
   drawDrop(22,79,CYAN);
-  x=drawNumber(42,61,"64",ICE);
+  x=drawNumber(42,61,"65",ICE);
   drawText9(x+2,88,"%",CYAN);
 
   drawBarometer(22,119);
@@ -274,11 +288,11 @@ static void drawDashboard() {
 
   // INDOOR: thermometer and temperature, then humidity.
   drawThermometer(305,27);
-  x=drawNumber(326,9,"22.4",ICE);
+  x=drawNumber(326,9,"+24.7",ICE);
   drawDegreeC(x+1,9,ICE);
 
   drawDrop(305,79,CORAL);
-  x=drawNumber(325,61,"45",ICE);
+  x=drawNumber(325,61,"52",ICE);
   drawText9(x+3,88,"%",CORAL);
 
   lcdFlush();
