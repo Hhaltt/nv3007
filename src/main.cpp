@@ -245,11 +245,35 @@ static void drawThermometer(int cx,int cy) {
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
 
+// Subtle ordered dithering in RGB565 space. PNGdec already returns RGB565,
+// so this breaks up visible contouring in smooth dark gradients without
+// allocating another framebuffer or changing the PNG decoding path.
+static uint16_t dither565(uint16_t color, int x, int y) {
+  static const uint8_t bayer4[4][4] = {
+    { 0,  8,  2, 10},
+    {12,  4, 14,  6},
+    { 3, 11,  1,  9},
+    {15,  7, 13,  5}
+  };
+  const int t = bayer4[y & 3][x & 3];
+  int r = (color >> 11) & 0x1F;
+  int g = (color >> 5) & 0x3F;
+  int b = color & 0x1F;
+
+  // Alternate adjacent RGB565 levels in a 4x4 pattern. Keep extremes intact.
+  const int delta = (t < 8) ? -1 : 1;
+  if (r > 1 && r < 30) r += delta;
+  if (g > 1 && g < 62) g += ((t & 1) ? delta : -delta);
+  if (b > 1 && b < 30) b += ((t & 2) ? delta : -delta);
+
+  return (uint16_t)((r << 11) | (g << 5) | b);
+}
+
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
   png.getLineAsRGB565(pDraw, line, PNG_RGB565_LITTLE_ENDIAN, 0xFFFFFFFF);
   for (int x=0; x<pDraw->iWidth && x<W; ++x) {
-    gfx.drawPixel(x, pDraw->y, line[x]);
+    gfx.drawPixel(x, pDraw->y, dither565(line[x], x, pDraw->y));
   }
   return 1;
 }
