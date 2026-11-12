@@ -249,7 +249,7 @@ static uint8_t pngData[4096];
 
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
-  png.getLineAsRGB565(pDraw, line, PNG_RGB565_LITTLE_ENDIAN, 0xFFFFFFFF);
+  png.getLineAsRGB565(pDraw, line, PNG_RGB565_BIG_ENDIAN, 0xFFFFFFFF);
   for (int x=0; x<pDraw->iWidth && x<W; ++x) {
     gfx.drawPixel(x, pDraw->y, line[x]);
   }
@@ -271,33 +271,14 @@ static bool drawBitmapBackground() {
 }
 
 static void drawDashboard() {
+  // The approved PNG already contains the complete visual composition.
+  // Do not redraw icons, numbers or the house over it.
   if (!drawBitmapBackground()) {
     gfx.fillScreen(BLACK);
+    Serial.println("ERROR: dashboard PNG decode failed");
+  } else {
+    Serial.println("Dashboard PNG decoded: 428x142");
   }
-
-  // OUTDOOR readings on the left.
-  drawThermometer(25,25);
-  int x=drawNumber(49,9,"+22.2",ICE);
-  drawDegreeC(x+1,9,ICE);
-
-  drawDrop(25,79,CYAN);
-  x=drawNumber(49,61,"65",ICE);
-  drawText9(x+2,88,"%",CYAN);
-
-  drawBarometer(25,119);
-  x=drawNumber(49,101,"1013",ICE);
-  drawText9(x+2,128,"hPa",ORANGE);
-
-  // House and INDOOR readings on the right.
-
-  drawThermometer(291,48);
-  x=drawNumber(307,31,"+24.7",ICE);
-  drawDegreeC(x+1,31,ICE);
-
-  drawDrop(291,96,CORAL);
-  x=drawNumber(307,78,"52",ICE);
-  drawText9(x+3,105,"%",CORAL);
-
   lcdFlush();
 }
 
