@@ -197,6 +197,13 @@ static void drawText12(int x,int baseline,const char *s,uint16_t c) {
   gfx.print(s);
   gfx.setFont();
 }
+static void drawText18(int x,int baseline,const char *s,uint16_t c) {
+  gfx.setFont(&FreeSansBold18pt7b);
+  gfx.setTextColor(c);
+  gfx.setCursor(x,baseline);
+  gfx.print(s);
+  gfx.setFont();
+}
 static void drawDegreeC(int x,int baseline,uint16_t c) {
   // Match the main value's 12pt weight/height: degree is raised,
   // while the C shares the same baseline as the temperature digits.
@@ -354,33 +361,31 @@ static void drawCustomPlus(int x, int centerY, uint16_t color) {
 }
 
 static void drawOutdoorTemperature() {
-  // Row center matches the outdoor thermometer icon in the background.
-  const int baseline = 29;
+  // Larger 18pt temperature; align the glyph group with the thermometer icon.
+  const int baseline = 36;
   const int plusX = 62;
-  drawCustomPlus(plusX, 21, WHITE);
+  drawCustomPlus(plusX, 22, WHITE, 5, 6, 2);
 
   const char *value = "22.2";
-  const int valueX = 72;
-  drawText12(valueX, baseline, value, WHITE);
-  const int right = textRightEdge(valueX, value, &FreeSansBold12pt7b);
+  const int valueX = 74;
+  drawText18(valueX, baseline, value, WHITE);
+  const int right = textRightEdge(valueX, value, &FreeSansBold18pt7b);
 
-  // Degree and C are positioned from the measured right edge of the digits.
-  gfx.drawCircle(right + 5, baseline - 11, 3, WHITE);
-  drawText9(right + 11, baseline, "C", WHITE);
-
-  drawTrendArrowUp(161, 21, WHITE);
+  gfx.drawCircle(right + 5, baseline - 16, 4, WHITE);
+  drawText12(right + 13, baseline, "C", WHITE);
+  drawTrendArrowUp(177, 22, WHITE);
 }
 
 static void drawOutdoorHumidity() {
   const char *prefix = "65% / 12.8 g/m";
   const int x = 58;
-  const int baseline = 69;
-  drawText9(x, baseline, prefix, WHITE);
+  const int baseline = 72;
+  drawText12(x, baseline, prefix, WHITE);
 
-  const int right = textRightEdge(x, prefix, &FreeSansBold9pt7b);
+  const int right = textRightEdge(x, prefix, &FreeSansBold12pt7b);
   gfx.setFont(&FreeSansBold9pt7b);
   gfx.setTextColor(WHITE);
-  gfx.setCursor(right + 1, baseline - 6);
+  gfx.setCursor(right + 1, baseline - 8);
   gfx.print("3");
   gfx.setFont();
 }
@@ -393,19 +398,19 @@ static void drawOutdoorPressure() {
 static void drawIndoorTemperature() {
   const uint16_t color = 0xFFDF;
   const int centerX = 329;
-  const int baseline = 69;
+  const int baseline = 72;
   const char *value = "+24.7";
-  const int valueX = centeredCursorX(centerX - 5, value, &FreeSansBold9pt7b);
+  const int valueX = centeredCursorX(centerX - 5, value, &FreeSansBold12pt7b);
 
-  drawText9(valueX, baseline, value, color);
-  const int right = textRightEdge(valueX, value, &FreeSansBold9pt7b);
-  gfx.drawCircle(right + 4, baseline - 9, 2, color);
-  drawText9(right + 9, baseline, "C", color);
+  drawText12(valueX, baseline, value, color);
+  const int right = textRightEdge(valueX, value, &FreeSansBold12pt7b);
+  gfx.drawCircle(right + 4, baseline - 13, 3, color);
+  drawText12(right + 11, baseline, "C", color);
 }
 
 static void drawIndoorHumidity() {
-  // No unit suffix; centered within the clear orange area.
-  drawTextAtCenter(329, 108, "52% / 10.4", &FreeSansBold9pt7b, 0xFFDF);
+  // Larger 12pt humidity row, centered within the clear orange area.
+  drawTextAtCenter(329, 108, "52% / 10.4", &FreeSansBold12pt7b, 0xFFDF);
 }
 
 static void drawDemoReadings() {
