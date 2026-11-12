@@ -263,28 +263,28 @@ static bool drawBitmapBackground() {
   constexpr size_t encodedSize = sizeof(dashboardBackgroundBase64) - 1;
   static_assert(encodedSize < sizeof(encodedPng), "Base64 buffer too small");
   memcpy_P(encodedPng, dashboardBackgroundBase64, encodedSize);
-  encodedPng[encodedSize] = '\\0';
+  encodedPng[encodedSize] = '\0';
 
   size_t decodedSize = 0;
   int rc = mbedtls_base64_decode(
       pngData, sizeof(pngData), &decodedSize,
       reinterpret_cast<const unsigned char *>(encodedPng), encodedSize);
   if (rc != 0) {
-    Serial.printf("Base64 decode failed: %d, encoded=%u, output cap=%u\\n",
+    Serial.printf("Base64 decode failed: %d, encoded=%u, output cap=%u\n",
                   rc, (unsigned)encodedSize, (unsigned)sizeof(pngData));
     return false;
   }
 
   rc = png.openRAM(pngData, (int)decodedSize, pngDraw);
   if (rc != PNG_SUCCESS) {
-    Serial.printf("PNG openRAM failed: %d, bytes=%u\\n", rc, (unsigned)decodedSize);
+    Serial.printf("PNG openRAM failed: %d, bytes=%u\n", rc, (unsigned)decodedSize);
     return false;
   }
-  Serial.printf("PNG info: %dx%d, bpp=%d, type=%d\\n",
+  Serial.printf("PNG info: %dx%d, bpp=%d, type=%d\n",
                 png.getWidth(), png.getHeight(), png.getBpp(), png.getPixelType());
   rc = png.decode(NULL, 0);
   if (rc != PNG_SUCCESS) {
-    Serial.printf("PNG decode failed: %d (last=%d)\\n", rc, png.getLastError());
+    Serial.printf("PNG decode failed: %d (last=%d)\n", rc, png.getLastError());
   }
   png.close();
   return rc == PNG_SUCCESS;
