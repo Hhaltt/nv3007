@@ -360,65 +360,87 @@ static void drawCustomPlus(int x, int centerY, uint16_t color) {
   gfx.fillRect(x - 1, centerY - 5, 2, 11, color);
 }
 
-static void drawOutdoorTemperature() {
-  // Larger 18pt temperature; align the glyph group with the thermometer icon.
-  const int baseline = 36;
-  const int plusX = 62;
-  drawCustomPlus(plusX, 22, WHITE);
+// =====================================================================
+// EDITABLE DASHBOARD LAYOUT
+// Change only this block to adjust displayed text and its appearance.
+//
+// Coordinates are in the logical 428x142 landscape canvas.
+// x = left edge for ALIGN_LEFT, center point for ALIGN_CENTER,
+//     right edge for ALIGN_RIGHT.
+// y = text baseline (not the top edge).
+// Font choices: &FreeSansBold9pt7b, &FreeSansBold12pt7b,
+//               &FreeSansBold18pt7b
+// Colors are RGB565. Examples: WHITE, 0xFFDF (warm white), 0x07FF (cyan).
+// =====================================================================
 
-  const char *value = "22.2";
-  const int valueX = 74;
-  drawText18(valueX, baseline, value, WHITE);
-  const int right = textRightEdge(valueX, value, &FreeSansBold18pt7b);
+enum TextAlign : uint8_t { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT };
 
-  gfx.drawCircle(right + 5, baseline - 16, 4, WHITE);
-  drawText12(right + 13, baseline, "C", WHITE);
-  drawTrendArrowUp(177, 22, WHITE);
-}
+struct DashboardText {
+  const char *text;
+  const GFXfont *font;
+  uint16_t color;
+  int16_t x;
+  int16_t y;
+  TextAlign align;
+  bool addDegreeC;   // Draw a degree mark and C after the text.
+};
 
-static void drawOutdoorHumidity() {
-  const char *prefix = "65% / 12.8 g/m";
-  const int x = 58;
-  const int baseline = 72;
-  drawText12(x, baseline, prefix, WHITE);
+// Edit the values below. Each row is independent.
+static const DashboardText DASHBOARD_TEXT[] = {
+  // Text             Font                    Color   X    Y    Align         °C
+  {"+22.2",           &FreeSansBold18pt7b,    WHITE,  74,  36,  ALIGN_LEFT,   true},
+  {"65% / 12.8 g/m3", &FreeSansBold12pt7b,    WHITE,  58,  72,  ALIGN_LEFT,   false},
+  {"760 mmHg",        &FreeSansBold12pt7b,    WHITE,  58, 108,  ALIGN_LEFT,   false},
+  {"+24.7",           &FreeSansBold12pt7b,    0xFFDF, 329,  72,  ALIGN_CENTER, true},
+  {"52% / 10.4",      &FreeSansBold12pt7b,    0xFFDF, 329, 108, ALIGN_CENTER, false},
+};
 
-  const int right = textRightEdge(x, prefix, &FreeSansBold12pt7b);
-  gfx.setFont(&FreeSansBold9pt7b);
-  gfx.setTextColor(WHITE);
-  gfx.setCursor(right + 1, baseline - 8);
-  gfx.print("3");
+// Trend arrows are also independently positioned.
+static constexpr int16_t TEMP_ARROW_X = 177;
+static constexpr int16_t TEMP_ARROW_Y = 22;
+static constexpr int16_t PRESSURE_ARROW_X = 190;
+static constexpr int16_t PRESSURE_ARROW_Y = 101;
+
+static void drawDashboardText(const DashboardText &item) {
+  gfx.setFont(item.font);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx.getTextBounds(item.text, 0, 0, &x1, &y1, &w, &h);
+
+  int16_t cursorX = item.x;
+  if (item.align == ALIGN_CENTER) cursorX -= (int16_t)w / 2 + x1;
+  else if (item.align == ALIGN_RIGHT) cursorX -= (int16_t)w + x1;
+
+  gfx.setTextColor(item.color);
+  gfx.setCursor(cursorX, item.y);
+  gfx.print(item.text);
   gfx.setFont();
+
+  if (item.addDegreeC) {
+    // Degree mark and C inherit the configured text size and baseline.
+    const int16_t right = cursorX + x1 + (int16_t)w;
+    const int16_t fontSize = (item.font == &FreeSansBold18pt7b) ? 18 :
+                             (item.font == &FreeSansBold12pt7b) ? 12 : 9;
+    const int16_t radius = (fontSize >= 18) ? 4 : (fontSize >= 12 ? 3 : 2);
+    const int16_t degreeX = right + 5;
+    const int16_t degreeY = item.y - (fontSize >= 18 ? 16 : fontSize >= 12 ? 12 : 9);
+    gfx.drawCircle(degreeX, degreeY, radius, item.color);
+
+    gfx.setFont(item.font);
+    gfx.setTextColor(item.color);
+    gfx.setCursor(degreeX + radius + 4, item.y);
+    gfx.print("C");
+    gfx.setFont();
+  }
 }
 
-static void drawOutdoorPressure() {
-  drawText12(58, 108, "760 mmHg", WHITE);
-  drawTrendArrowSteady(190, 101, WHITE);
-}
+static void drawDashboardReadings() {
+  for (const DashboardText &item : DASHBOARD_TEXT) {
+    drawDashboardText(item);
+  }
 
-static void drawIndoorTemperature() {
-  const uint16_t color = 0xFFDF;
-  const int centerX = 329;
-  const int baseline = 72;
-  const char *value = "+24.7";
-  const int valueX = centeredCursorX(centerX - 5, value, &FreeSansBold12pt7b);
-
-  drawText12(valueX, baseline, value, color);
-  const int right = textRightEdge(valueX, value, &FreeSansBold12pt7b);
-  gfx.drawCircle(right + 4, baseline - 13, 3, color);
-  drawText12(right + 11, baseline, "C", color);
-}
-
-static void drawIndoorHumidity() {
-  // Larger 12pt humidity row, centered within the clear orange area.
-  drawTextAtCenter(329, 108, "52% / 10.4", &FreeSansBold12pt7b, 0xFFDF);
-}
-
-static void drawDemoReadings() {
-  drawOutdoorTemperature();
-  drawOutdoorHumidity();
-  drawOutdoorPressure();
-  drawIndoorTemperature();
-  drawIndoorHumidity();
+  drawTrendArrowUp(TEMP_ARROW_X, TEMP_ARROW_Y, WHITE);
+  drawTrendArrowSteady(PRESSURE_ARROW_X, PRESSURE_ARROW_Y, WHITE);
 }
 
 static void drawDashboard() {
@@ -427,7 +449,7 @@ static void drawDashboard() {
     Serial.println("ERROR: dashboard PNG decode failed");
   } else {
     Serial.println("Dashboard PNG decoded: 428x142");
-    drawDemoReadings();
+    drawDashboardReadings();
   }
   lcdFlush();
 }
