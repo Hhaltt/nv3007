@@ -245,8 +245,7 @@ static void drawThermometer(int cx,int cy) {
 // House outline on the RIGHT, matching the approved 428x142 composition.
 // Decode and draw the approved 428x142 PNG background into the framebuffer.
 static PNG png;
-static uint8_t pngData[60000];
-static char encodedPng[76825];
+static uint8_t pngData[58000];
 
 static int pngDraw(PNGDRAW *pDraw) {
   uint16_t line[W];
@@ -258,33 +257,31 @@ static int pngDraw(PNGDRAW *pDraw) {
 }
 
 static bool drawBitmapBackground() {
-  // Copy the PROGMEM string to a static RAM buffer before decoding.
-  // The previous direct PROGMEM pointer path fails on this ESP32-C3 setup.
+  // ESP32-C3 flash is memory-mapped: decode Base64 directly from PROGMEM.
+  // Do NOT allocate a second 76 KB Base64 buffer in DRAM.
   constexpr size_t encodedSize = sizeof(dashboardBackgroundBase64) - 1;
-  static_assert(encodedSize < sizeof(encodedPng), "Base64 buffer too small");
-  memcpy_P(encodedPng, dashboardBackgroundBase64, encodedSize);
-  encodedPng[encodedSize] = '\0';
-
   size_t decodedSize = 0;
+  const unsigned char *encoded =
+      reinterpret_cast<const unsigned char *>(dashboardBackgroundBase64);
+
   int rc = mbedtls_base64_decode(
-      pngData, sizeof(pngData), &decodedSize,
-      reinterpret_cast<const unsigned char *>(encodedPng), encodedSize);
+      pngData, sizeof(pngData), &decodedSize, encoded, encodedSize);
   if (rc != 0) {
-    Serial.printf("Base64 decode failed: %d, encoded=%u, output cap=%u\n",
+    Serial.printf("Base64 decode failed: %d, encoded=%u, output cap=%u\\n",
                   rc, (unsigned)encodedSize, (unsigned)sizeof(pngData));
     return false;
   }
 
   rc = png.openRAM(pngData, (int)decodedSize, pngDraw);
   if (rc != PNG_SUCCESS) {
-    Serial.printf("PNG openRAM failed: %d, bytes=%u\n", rc, (unsigned)decodedSize);
+    Serial.printf("PNG openRAM failed: %d, bytes=%u\\n", rc, (unsigned)decodedSize);
     return false;
   }
-  Serial.printf("PNG info: %dx%d, bpp=%d, type=%d\n",
+  Serial.printf("PNG info: %dx%d, bpp=%d, type=%d\\n",
                 png.getWidth(), png.getHeight(), png.getBpp(), png.getPixelType());
   rc = png.decode(NULL, 0);
   if (rc != PNG_SUCCESS) {
-    Serial.printf("PNG decode failed: %d (last=%d)\n", rc, png.getLastError());
+    Serial.printf("PNG decode failed: %d (last=%d)\\n", rc, png.getLastError());
   }
   png.close();
   return rc == PNG_SUCCESS;
